@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visitor Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* A little extra CSS for the modal transition */
+        #modal.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-2">Visitor Analytics</h1>
+        <p class="text-center text-gray-500 mb-8">Click on a card to see full details.</p>
+
+        <div id="visitor-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            </div>
+    </div>
+
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+        <div id="modal-content" class="bg-white rounded-lg shadow-2xl w-full max-w-2xl transform transition-all duration-300 ease-in-out">
+            <div class="flex justify-between items-center p-5 border-b border-gray-200">
+                <h3 class="text-2xl font-semibold text-gray-800">Visitor Details</h3>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div><strong class="text-gray-500">Timestamp:</strong> <span id="modal-timestamp" class="text-gray-900 block"></span></div>
+                <div><strong class="text-gray-500">Public IP:</strong> <span id="modal-public-ip" class="text-gray-900 block"></span></div>
+                <div><strong class="text-gray-500">Country:</strong> <span id="modal-country" class="text-gray-900 block"></span></div>
+                <div><strong class="text-gray-500">City:</strong> <span id="modal-city" class="text-gray-900 block"></span></div>
+                <div><strong class="text-gray-500">Device OS:</strong> <span id="modal-device-os" class="text-gray-900 block"></span></div>
+                <div><strong class="text-gray-500">OS Version:</strong> <span id="modal-os-version" class="text-gray-900 block"></span></div>
+                <div class="md:col-span-2"><strong class="text-gray-500">Page Visited:</strong> <span id="modal-page-visited" class="text-gray-900 block break-all"></span></div>
+                <div class="md:col-span-2"><strong class="text-gray-500">Full User Agent:</strong> <span id="modal-user-agent" class="text-gray-900 block break-all"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const visitorGrid = document.getElementById('visitor-grid');
+        const modal = document.getElementById('modal');
+        const modalContent = document.getElementById('modal-content');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+
+        function createVisitorCard(visitor) {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-5 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transform transition-all duration-300 cursor-pointer';
+            card.dataset.visitor = JSON.stringify(visitor); // Store full data on the element
+
+            card.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0 h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 font-bold text-lg">
+                        ${visitor.country ? visitor.country.substring(0, 2).toUpperCase() : '??'}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-lg font-bold text-gray-900 truncate">${visitor.public_ip || 'Unknown IP'}</p>
+                        <p class="text-sm text-gray-500 truncate">${visitor.city || 'Unknown City'}, ${visitor.country || 'Unknown Country'}</p>
+                    </div>
+                </div>
+                <div class="mt-4 text-xs text-gray-400">
+                    Visited on ${new Date(visitor.created_at).toLocaleDateString()}
+                </div>
+            `;
+            return card;
+        }
+
+        async function populateDashboard() {
+            try {
+                const response = await fetch('/api/visitors');
+                const visitors = await response.json();
+                visitorGrid.innerHTML = ''; // Clear existing cards
+                visitors.forEach(visitor => {
+                    const card = createVisitorCard(visitor);
+                    visitorGrid.appendChild(card);
+                });
+            } catch (error) {
+                console.error("Failed to fetch visitors:", error);
+                visitorGrid.innerHTML = '<p class="text-red-500 text-center col-span-full">Could not load visitor data.</p>';
+            }
+        }
+
+        function showModal(visitorData) {
+            document.getElementById('modal-timestamp').textContent = new Date(visitorData.created_at).toLocaleString();
+            document.getElementById('modal-public-ip').textContent = visitorData.public_ip || 'N/A';
+            document.getElementById('modal-country').textContent = visitorData.country || 'N/A';
+            document.getElementById('modal-city').textContent = visitorData.city || 'N/A';
+            document.getElementById('modal-device-os').textContent = visitorData.device_os || 'N/A';
+            document.getElementById('modal-os-version').textContent = visitorData.os_version || 'N/A';
+            document.getElementById('modal-page-visited').textContent = visitorData.page_visited || 'N/A';
+            document.getElementById('modal-user-agent').textContent = visitorData.user_agent || 'N/A';
+            modal.classList.remove('hidden');
+        }
+
+        function hideModal() {
+            modal.classList.add('hidden');
+        }
+
+        // Event listener for opening the modal (using event delegation)
+        visitorGrid.addEventListener('click', (event) => {
+            const card = event.target.closest('[data-visitor]');
+            if (card) {
+                const visitorData = JSON.parse(card.dataset.visitor);
+                showModal(visitorData);
+            }
+        });
+
+        // Event listeners for closing the modal
+        closeModalBtn.addEventListener('click', hideModal);
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                hideModal();
+            }
+        });
+
+        // Load data on page load and set interval to refresh
+        document.addEventListener('DOMContentLoaded', () => {
+            populateDashboard();
+            setInterval(populateDashboard, 15000); // Refresh every 15 seconds
+        });
+    </script>
+</body>
+</html>
