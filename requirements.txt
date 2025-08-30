@@ -1,4 +1,4 @@
-Flask
-supabase
-python-dotenv
-Flask-Cors
+Flask>=3.0.3
+supabase>=2.5.1
+python-dotenv>=1.0.1
+Flask-Cors>=4.0.1
