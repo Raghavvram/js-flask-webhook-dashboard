@@ -5,21 +5,20 @@
     <title>Visitor Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* This ensures the HTML element has a background color transition */
         html {
             transition: background-color 0.3s ease-in-out;
         }
 
-        /* Modal transition */
         #modal.hidden {
             display: none;
         }
 
-        /* Custom styles for the theme toggle switch */
+        /* --- CORRECTED TOGGLE STYLES --- */
+        /* This rule handles the physical sliding of the dot */
         #theme-toggle:checked ~ .dot {
-            transform: translateX(100%);
-            background-color: #ffffff; /* white */
+            transform: translateX(24px);
         }
+        /* This rule changes the background color of the track when active */
         #theme-toggle:checked ~ .block {
             background-color: #4f46e5; /* indigo-600 */
         }
@@ -34,7 +33,7 @@
                 <div class="relative mx-2">
                     <input type="checkbox" id="theme-toggle" class="sr-only">
                     <div class="block bg-gray-300 dark:bg-gray-700 w-12 h-6 rounded-full transition"></div>
-                    <div class="dot absolute left-1 top-1 bg-white dark:bg-gray-900 w-4 h-4 rounded-full transition"></div>
+                    <div class="dot absolute left-1 top-1 bg-white dark:bg-gray-400 w-4 h-4 rounded-full transition"></div>
                 </div>
                 <svg class="w-6 h-6 text-gray-400 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
             </label>
@@ -69,6 +68,7 @@
     </div>
 
     <script>
+        // The JavaScript does not need any changes and remains the same.
         const visitorGrid = document.getElementById('visitor-grid');
         const modal = document.getElementById('modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
@@ -129,7 +129,6 @@
             modal.classList.add('hidden');
         }
 
-        // --- Theme Management ---
         function applyTheme(theme) {
             if (theme === 'dark') {
                 htmlEl.classList.add('dark');
@@ -146,17 +145,13 @@
             applyTheme(newTheme);
         });
 
-        // --- Event Listeners & Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Load saved theme
             const savedTheme = localStorage.getItem('theme') || 'light';
             applyTheme(savedTheme);
 
-            // Populate dashboard
             populateDashboard();
             setInterval(populateDashboard, 15000);
 
-            // Modal open listener (using event delegation)
             visitorGrid.addEventListener('click', (event) => {
                 const card = event.target.closest('[data-visitor]');
                 if (card) {
@@ -165,7 +160,6 @@
                 }
             });
 
-            // Modal close listeners
             closeModalBtn.addEventListener('click', hideModal);
             modal.addEventListener('click', (event) => {
                 if (event.target === modal) {
