@@ -1,10 +1,11 @@
 (function() {
-    // IMPORTANT: Change this URL to your deployed Flask app's tracking endpoint
+    // IMPORTANT: This URL should be correct.
     const flaskEndpoint = 'https://js-flask-webhook-dashboard-l8alubmuw-raghavvrams-projects.vercel.app/track';
 
     async function getVisitorData() {
         try {
-            const response = await fetch('https://ip-api.com/json');
+            // FIXED: Switched to a more reliable IP info service.
+            const response = await fetch('https://ipinfo.io/json');
             const ipData = await response.json();
             const userAgent = navigator.userAgent;
 
@@ -26,7 +27,8 @@
             }
 
             return {
-                publicIp: ipData.query,
+                // FIXED: ipinfo.io returns 'ip' instead of 'query'.
+                publicIp: ipData.ip,
                 country: ipData.country,
                 city: ipData.city,
                 userAgent: userAgent,
@@ -47,7 +49,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
-                mode: 'cors' // This is crucial for cross-domain requests
+                mode: 'cors'
             }).catch(console.error);
         }
     }
