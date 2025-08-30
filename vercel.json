@@ -5,7 +5,8 @@
       "src": "app.py",
       "use": "@vercel/python",
       "config": {
-        "pip": "install -r requirements.txt"
+        "pip": "install -r requirements.txt",
+        "includeFiles": "templates/**"
       }
     }
   ],
@@ -14,10 +15,5 @@
       "src": "/(.*)",
       "dest": "app.py"
     }
-  ],
-  "functions": {
-    "app.py": {
-      "includeFiles": "templates/**"
-    }
-  }
+  ]
 }
