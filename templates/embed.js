@@ -1,6 +1,6 @@
 (function() {
     // IMPORTANT: Change this URL to your deployed Flask app's tracking endpoint
-    const flaskEndpoint = 'https://your-flask-app-url.com/track';
+    const flaskEndpoint = 'https://js-flask-webhook-dashboard-l8alubmuw-raghavvrams-projects.vercel.app/track';
 
     async function getVisitorData() {
         try {
