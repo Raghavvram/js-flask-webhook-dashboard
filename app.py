@@ -6,8 +6,8 @@ from flask_cors import CORS, cross_origin
 
 load_dotenv()
 
-app = Flask(__name__)
-CORS(app) # Enable CORS for the entire app
+app = Flask(__name__, template_folder='templates') # Add the template_folder argument
+CORS(app)
 
 supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")
