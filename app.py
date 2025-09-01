@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, render_template
 from supabase import create_client, Client
 from flask_cors import CORS
 from user_agents import parse
+import pycountry # <-- ADD THIS IMPORT
 
 load_dotenv()
 
@@ -14,12 +15,28 @@ supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(supabase_url, supabase_key)
 
-# A simple map to convert full country names to the 2-letter codes needed by the map chart
-COUNTRY_CODE_MAP = {
-    "United States": "US", "India": "IN", "Germany": "DE", "United Kingdom": "GB",
-    "Canada": "CA", "Australia": "AU", "France": "FR", "Brazil": "BR", "Japan": "JP",
-    "China": "CN", "Russia": "RU", "Netherlands": "NL", "Switzerland": "CH", "Spain": "ES"
-}
+# --- NEW: A robust function to find the country code ---
+def get_country_code(country_name):
+    """
+    Finds the 2-letter ISO country code from a country name.
+    Returns None if not found.
+    """
+    if not country_name:
+        return None
+    try:
+        # Search for the country by its common name
+        country = pycountry.countries.get(name=country_name)
+        if country:
+            return country.alpha_2
+        # If not found, try a fuzzy search (e.g., "United States" vs "United States of America")
+        country = pycountry.countries.search_fuzzy(country_name)
+        if country:
+            return country[0].alpha_2
+    except (AttributeError, KeyError, LookupError):
+        # Handle cases where the library can't find a match
+        return None
+    return None
+
 
 @app.route('/dashboard')
 def dashboard():
@@ -64,11 +81,11 @@ def track():
 
     country_name = data.get("country")
 
-    # This dictionary now perfectly matches our new table schema
     visitor_data = {
         "public_ip": data.get("publicIp"),
         "country": country_name,
-        "country_code": COUNTRY_CODE_MAP.get(country_name), 
+        # --- UPDATED: Use our new function instead of the old dictionary ---
+        "country_code": get_country_code(country_name), 
         "city": data.get("city"),
         "page_visited": data.get("pageVisited"),
         "user_agent": user_agent_string,
