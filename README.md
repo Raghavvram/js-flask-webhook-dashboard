@@ -73,8 +73,8 @@ Follow these instructions to set up and run the project on your local machine fo
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/js-flask-dashboard.git
-    cd js-flask-dashboard
+    git clone https://github.com/Raghavvram/js-flask-webhook-dashboard.git
+    cd js-flask-webhook-dashboard
     ```
 
 2.  **Create a virtual environment and activate it:**
