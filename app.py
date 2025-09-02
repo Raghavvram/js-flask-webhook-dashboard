@@ -1,5 +1,5 @@
 import os
-import json # <-- ADD THIS IMPORT
+import json
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
 from supabase import create_client, Client
@@ -93,33 +93,24 @@ def track():
         print(f"AN ERROR OCCURRED IN /track: {e}")
         return jsonify({"error": str(e)}), 500
 
-# --- UPDATED/CORRECTED ENDPOINT ---
-@app.route('/track_duration', methods=['POST'])
-def track_duration():
+@app.route('/log/time', methods=['POST'])
+def log_time():
     try:
-        # get_data() reads the raw request body, which is what we need for sendBeacon
-        raw_data = request.get_data(as_text=True)
-        if not raw_data:
-            return jsonify({"error": "No data received"}), 400
-        
-        # Manually parse the JSON string into a Python dictionary
-        data = json.loads(raw_data)
-        
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON"}), 400
+
         session_id = data.get('sessionId')
         time_spent = data.get('timeSpentSeconds')
 
         if not session_id or time_spent is None:
             return jsonify({"error": "Missing session_id or timeSpentSeconds"}), 400
 
-        # Update the visitor record that matches the session_id
         supabase.table('visitors').update({
             'time_spent_seconds': time_spent
         }).eq('session_id', session_id).execute()
 
         return jsonify({"success": True}), 200
-
     except Exception as e:
-        # This endpoint is called via sendBeacon, which doesn't process responses.
-        # So we just log the error for debugging.
-        print(f"AN ERROR OCCURRED IN /track_duration: {e}")
+        print(f"AN ERROR OCCURRED IN /log/time: {e}")
         return jsonify({"error": str(e)}), 500
