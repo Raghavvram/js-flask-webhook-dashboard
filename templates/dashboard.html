@@ -12,12 +12,14 @@
     <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
     <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
     <style>
-        #chartdiv { width: 100%; height: 500px; } .loader { border-top-color: #4f46e5; animation: spinner 1.5s linear infinite; } @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .event-details { overflow: hidden; max-height: 1000px; transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out; } .event-details.collapsed { max-height: 0; padding-top: 0; padding-bottom: 0; }
+        #chartdiv { width: 100%; height: 500px; }
+        .loader { border-top-color: #4f46e5; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 font-sans">
-    <div id="loader-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-80 z-50 flex justify-center items-center"><div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div></div>
+    <div id="loader-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-80 z-50 flex justify-center items-center hidden"><div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div></div>
+    
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-4xl font-bold text-center text-gray-100 mb-8">Analytics Dashboard</h1>
         
@@ -31,18 +33,18 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
             <div class="lg:col-span-2 flex flex-col gap-8">
-                <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md"><h3 class="font-semibold mb-4 text-gray-100">Visitor Count Country-wise</h3><div id="chartdiv"></div></div>
-                <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md"><h3 class="font-semibold mb-4 text-gray-100">Sessions Date-wise</h3><canvas id="date-chart"></canvas></div>
+                <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md"><h3 class="font-semibold mb-4 text-gray-100">Visitors by Country</h3><div id="chartdiv"></div></div>
+                <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md"><h3 class="font-semibold mb-4 text-gray-100">Visitors by Date</h3><canvas id="date-chart"></canvas></div>
             </div>
             <div class="flex flex-col gap-8">
-                <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md"><h3 class="font-semibold mb-4 text-gray-100">Sessions by Device</h3><canvas id="device-chart"></canvas></div>
+                <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md"><h3 class="font-semibold mb-4 text-gray-100">Visitors by Device</h3><canvas id="device-chart"></canvas></div>
                 <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md"><h3 class="font-semibold mb-4 text-gray-100">Top Browsers</h3><canvas id="browser-chart"></canvas></div>
             </div>
         </div>
 
         <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-md">
-            <div class="p-4 border-b border-gray-700"><h3 class="text-lg font-semibold text-gray-100">Recent Session Timelines</h3></div>
-            <div id="sessions-container" class="p-6 space-y-4"></div>
+            <div class="p-4 border-b border-gray-700"><h3 class="text-lg font-semibold text-gray-100">Recent Visitors</h3></div>
+            <div id="visitors-container" class="p-6 space-y-3"></div>
         </div>
     </div>
 
@@ -50,82 +52,128 @@
     let mapRoot, dateChart, deviceChart, browserChart, datePicker;
     const loader = document.getElementById('loader-overlay');
 
-    function formatDuration(seconds) { if (seconds === null || isNaN(seconds) || seconds < 0) return "0s"; if (seconds < 60) return `${Math.round(seconds)}s`; const minutes = Math.floor(seconds / 60); const rem = Math.round(seconds % 60); return `${minutes}m ${rem}s`; }
+    function formatDuration(seconds) {
+        if (seconds === null || isNaN(seconds) || seconds < 0) return "N/A";
+        if (seconds < 60) return `${Math.round(seconds)}s`;
+        const minutes = Math.floor(seconds / 60);
+        const rem = Math.round(seconds % 60);
+        return `${minutes}m ${rem}s`;
+    }
 
+    // --- UPDATED to match Flask API keys ---
     function renderStats(stats = {}) {
-        const totalSessions = stats.total_sessions || 0;
-        const uniqueUsers = stats.unique_users || 0;
-        const returningVisits = totalSessions - uniqueUsers;
-        const avgDuration = stats.avg_duration_seconds || 0;
+        const totalVisitors = stats.total_visitors || 0;
+        const uniqueVisitors = stats.unique_visitors || 0;
+        const repeatedVisitors = stats.repeated_visitors || 0;
+        const avgDuration = stats.avg_time_on_page || 0;
 
         document.getElementById("stats-grid").innerHTML = `
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Total Sessions (Viewers)</h3><p class="text-3xl font-bold mt-2">${totalSessions}</p></div>
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Unique Users</h3><p class="text-3xl font-bold mt-2">${uniqueUsers}</p></div>
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Returning Visits</h3><p class="text-3xl font-bold mt-2">${returningVisits > 0 ? returningVisits : 0}</p></div>
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Avg. Session Duration</h3><p class="text-3xl font-bold mt-2">${formatDuration(avgDuration)}</p></div>`;
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Total Visits</h3><p class="text-3xl font-bold mt-2">${totalVisitors}</p></div>
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Unique Visitors</h3><p class="text-3xl font-bold mt-2">${uniqueVisitors}</p></div>
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Repeated Visitors</h3><p class="text-3xl font-bold mt-2">${repeatedVisitors > 0 ? repeatedVisitors : 0}</p></div>
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Avg. Time on Page</h3><p class="text-3xl font-bold mt-2">${formatDuration(avgDuration)}</p></div>`;
     }
 
-    // --- All other JavaScript functions (createEventHTML, renderMap, fetchAndRenderData, etc.) remain unchanged ---
-    function createEventHTML(event) {
-        let details = '';
-        const payload = event.payload || {};
-        switch (event.event_type) {
-            case 'pageview': details = `<span class="truncate" title="${payload.page}">Viewed: <strong>${payload.page ? payload.page.split('/').pop() || payload.page : 'N/A'}</strong></span>`; break;
-            case 'page_unload': details = `Time: <strong>${formatDuration(payload.time_spent_seconds)}</strong> | Scroll: <strong>${payload.max_scroll_depth}%</strong>`; break;
-            case 'click': details = `Clicked: <strong>${payload.element_id}</strong>`; break;
-            case 'performance': details = `Perf: <strong>${payload.metric_name}</strong> - ${parseFloat(payload.value).toFixed(2)}`; break;
-            default: details = JSON.stringify(payload);
-        }
-        return `<div class="text-sm text-gray-400 flex gap-4"><time class="w-20 text-gray-500">${new Date(event.timestamp).toLocaleTimeString()}</time><div>${details}</div></div>`;
-    }
-
-    function createSessionHTML(session) {
-        const eventsHTML = (session.events || []).map(createEventHTML).join('');
+    // --- NEW function to display simple visitor data ---
+    function createVisitorHTML(visitor) {
         return `
-        <div class="bg-gray-900 border border-gray-700 rounded-lg">
-            <div class="session-header p-4 flex justify-between items-center cursor-pointer hover:bg-gray-700">
-                <div>
-                    <p class="font-mono text-xs text-indigo-400" title="User ID: ${session.user_id}">User ...${session.user_id.slice(-12)}</p>
-                    <p class="text-gray-300 text-sm">${session.device_type} / ${session.browser}</p>
-                </div>
-                <div class="text-right"><p class="text-sm text-gray-400">${new Date(session.start_time).toLocaleString()}</p></div>
+        <div class="bg-gray-900 border border-gray-700 rounded-lg p-4 grid grid-cols-2 md:grid-cols-5 gap-4 items-center text-sm">
+            <div>
+                <p class="font-bold text-gray-300">${visitor.country || 'Unknown'}, ${visitor.city || 'N/A'}</p>
+                <p class="text-gray-400">${visitor.public_ip}</p>
             </div>
-            <div class="event-details collapsed p-4 border-t border-gray-600 space-y-2">${eventsHTML}</div>
+            <div>
+                <p class="font-bold text-gray-300">${visitor.device_type || 'N/A'}</p>
+                <p class="text-gray-400">${visitor.browser || 'N/A'} on ${visitor.operating_system || 'N/A'}</p>
+            </div>
+            <div class="truncate">
+                <p class="font-bold text-gray-300">Page Visited</p>
+                <p class="text-gray-400" title="${visitor.page_visited || ''}">${visitor.page_visited || 'N/A'}</p>
+            </div>
+            <div>
+                <p class="font-bold text-gray-300">Time on Page</p>
+                <p class="text-gray-400">${formatDuration(visitor.time_spent_seconds)}</p>
+            </div>
+            <div class="text-right">
+                <p class="font-bold text-gray-300">Timestamp</p>
+                <p class="text-gray-400">${new Date(visitor.created_at).toLocaleString()}</p>
+            </div>
         </div>`;
     }
 
-    function renderSessions(sessions = []) {
-        const container = document.getElementById('sessions-container');
-        container.innerHTML = (!sessions || sessions.length === 0) ? '<p class="text-gray-500 text-center py-8">No session data for this period.</p>' : sessions.map(createSessionHTML).join('');
+    // --- UPDATED to render visitors instead of complex sessions ---
+    function renderVisitors(visitors = []) {
+        const container = document.getElementById('visitors-container');
+        if (!visitors || visitors.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">No visitor data for this period.</p>';
+        } else {
+            container.innerHTML = visitors.map(createVisitorHTML).join('');
+        }
     }
     
-    function renderMap(countryData=[]){if(mapRoot)mapRoot.dispose();mapRoot=am5.Root.new("chartdiv");mapRoot.setThemes([am5themes_Animated.new(mapRoot)]);let chart=mapRoot.container.children.push(am5map.MapChart.new(mapRoot,{panX:"rotateX",projection:am5map.geoMercator()}));let polygonSeries=chart.series.push(am5map.MapPolygonSeries.new(mapRoot,{geoJSON:am5geodata_worldLow,exclude:["AQ"],valueField:"value"}));polygonSeries.mapPolygons.template.setAll({tooltipText:"{name}: {value}",interactive:!0,fill:am5.color(0x4a5568)});polygonSeries.mapPolygons.template.states.create("hover",{fill:am5.color(0x4f46e5)});polygonSeries.set("heatRules",[{target:polygonSeries.mapPolygons.template,key:"fill",min:am5.color(0x4a5568),max:am5.color(0x6366f1),dataField:"value"}]);polygonSeries.data.setAll(countryData)}
-    function renderBreakdownCharts(deviceData=[],browserData=[]){const chartOptions={responsive:!0,plugins:{legend:{position:"bottom",labels:{boxWidth:12,color:'#a1a1aa'}}}};if(deviceChart)deviceChart.destroy();deviceChart=new Chart(document.getElementById("device-chart").getContext("2d"),{type:"pie",data:{labels:deviceData.map(d=>d.device_type),datasets:[{data:deviceData.map(d=>d.count),backgroundColor:["#4F46E5","#7C3AED","#EC4899"]}]},options:chartOptions});if(browserChart)browserChart.destroy();browserChart=new Chart(document.getElementById("browser-chart").getContext("2d"),{type:"doughnut",data:{labels:browserData.map(d=>d.browser),datasets:[{data:browserData.map(d=>d.count),backgroundColor:["#10B981","#F59E0B","#3B82F6","#D946EF","#EF4444"]}]},options:chartOptions})}
-    function renderDateChart(dateData=[]){if(dateChart)dateChart.destroy();dateChart=new Chart(document.getElementById("date-chart"),{type:"line",data:{labels:dateData.map(d=>new Date(d.date).toLocaleDateString(undefined,{month:"short",day:"numeric"})),datasets:[{label:"Sessions",data:dateData.map(d=>d.count),borderColor:"#4F46E5",backgroundColor:"rgba(79,70,229,0.1)",fill:!0,tension:.3}]},options:{responsive:!0,scales:{y:{ticks:{color:"#a1a1aa"}},x:{ticks:{color:"#a1a1aa"}}},plugins:{legend:{display:!1}}}})}
-    function populateCountryFilter(countries=[]){const select=document.getElementById("country-filter");select.innerHTML='<option value="">All Countries</option>';countries.sort().forEach(code=>{const option=document.createElement("option");option.value=code;option.textContent=code;select.appendChild(option)})}
+    function renderMap(countryData = []) {
+        if (mapRoot) mapRoot.dispose();
+        mapRoot = am5.Root.new("chartdiv");
+        mapRoot.setThemes([am5themes_Animated.new(mapRoot)]);
+        let chart = mapRoot.container.children.push(am5map.MapChart.new(mapRoot, { panX: "rotateX", projection: am5map.geoMercator() }));
+        let polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(mapRoot, { geoJSON: am5geodata_worldLow, exclude: ["AQ"], valueField: "value" }));
+        polygonSeries.mapPolygons.template.setAll({ tooltipText: "{name}: {value}", interactive: true, fill: am5.color(0x4a5568) });
+        polygonSeries.mapPolygons.template.states.create("hover", { fill: am5.color(0x4f46e5) });
+        polygonSeries.set("heatRules", [{ target: polygonSeries.mapPolygons.template, key: "fill", min: am5.color(0x4a5568), max: am5.color(0x6366f1), dataField: "value" }]);
+        polygonSeries.data.setAll(countryData);
+    }
+
+    function renderBreakdownCharts(deviceData = [], browserData = []) {
+        const chartOptions = { responsive: true, plugins: { legend: { position: "bottom", labels: { boxWidth: 12, color: '#a1a1aa' } } } };
+        if (deviceChart) deviceChart.destroy();
+        deviceChart = new Chart(document.getElementById("device-chart").getContext("2d"), { type: "pie", data: { labels: deviceData.map(d => d.device_type), datasets: [{ data: deviceData.map(d => d.count), backgroundColor: ["#4F46E5", "#7C3AED", "#EC4899"] }] }, options: chartOptions });
+        if (browserChart) browserChart.destroy();
+        browserChart = new Chart(document.getElementById("browser-chart").getContext("2d"), { type: "doughnut", data: { labels: browserData.map(d => d.browser), datasets: [{ data: browserData.map(d => d.count), backgroundColor: ["#10B981", "#F59E0B", "#3B82F6", "#D946EF", "#EF4444"] }] }, options: chartOptions });
+    }
+
+    function renderDateChart(dateData = []) {
+        if (dateChart) dateChart.destroy();
+        dateChart = new Chart(document.getElementById("date-chart"), { type: "line", data: { labels: dateData.map(d => new Date(d.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })), datasets: [{ label: "Sessions", data: dateData.map(d => d.count), borderColor: "#4F46E5", backgroundColor: "rgba(79,70,229,0.1)", fill: true, tension: .3 }] }, options: { responsive: true, scales: { y: { ticks: { color: "#a1a1aa" } }, x: { ticks: { color: "#a1a1aa" } } }, plugins: { legend: { display: false } } } });
+    }
+
+    function populateCountryFilter(countries = []) {
+        const select = document.getElementById("country-filter");
+        select.innerHTML = '<option value="">All Countries</option>';
+        countries.sort().forEach(countryName => {
+            const option = document.createElement("option");
+            option.value = countryName;
+            option.textContent = countryName;
+            select.appendChild(option);
+        });
+    }
 
     async function fetchAndRenderData() {
         loader.classList.remove('hidden');
-        const params=new URLSearchParams({
-            ...(document.getElementById("country-filter").value && {country_filter: document.getElementById("country-filter").value}),
-            ...(datePicker.getStartDate() && {start_date_filter: datePicker.getStartDate().toISOString()}),
-            ...(datePicker.getEndDate() && {end_date_filter: datePicker.getEndDate().toISOString()})
+        const params = new URLSearchParams({
+            ...(document.getElementById("country-filter").value && { country: document.getElementById("country-filter").value }),
+            ...(datePicker.getStartDate() && { start_date: datePicker.getStartDate().toISOString() }),
+            ...(datePicker.getEndDate() && { end_date: datePicker.getEndDate().toISOString() })
         });
         
         try {
             const response = await fetch(`/api/analytics?${params.toString()}`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
+
             renderStats(data.stats);
             renderMap(data.charts.by_country);
             renderBreakdownCharts(data.charts.by_device, data.charts.by_browser);
             renderDateChart(data.charts.by_date);
-            renderSessions(data.sessions);
+            // --- UPDATED to call the correct function with the correct data key ---
+            renderVisitors(data.visitor_list);
 
+            // Populate country filter only once on initial load
             if (document.getElementById("country-filter").options.length <= 1) {
                 populateCountryFilter(data.meta.distinct_countries);
             }
         } catch (error) {
             console.error("Failed to load analytics data:", error);
+            document.body.innerHTML = `<div class="text-center p-8 text-red-400">Failed to load analytics data. Check the console and ensure the Flask server is running.</div>`;
         } finally {
             loader.classList.add('hidden');
         }
@@ -134,10 +182,6 @@
     document.addEventListener('DOMContentLoaded', () => {
         datePicker = new Litepicker({ element: document.getElementById('date-filter'), singleMode: false, format: 'MMM D, YYYY' });
         document.getElementById('apply-filters-btn').addEventListener('click', fetchAndRenderData);
-        document.getElementById('sessions-container').addEventListener('click', (event) => {
-            const header = event.target.closest('.session-header');
-            if (header) header.nextElementSibling.classList.toggle('collapsed');
-        });
         fetchAndRenderData();
     });
 </script>
