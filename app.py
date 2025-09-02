@@ -1,49 +1,35 @@
 import os
+import json
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
 from supabase import create_client, Client
 from flask_cors import CORS
-from user_agents import parse
-import pycountry # <-- ADD THIS IMPORT
 
 load_dotenv()
 
 app = Flask(__name__, template_folder='templates')
 CORS(app)
 
+# Initialize Supabase client
 supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(supabase_url, supabase_key)
 
-# --- NEW: A robust function to find the country code ---
-def get_country_code(country_name):
-    """
-    Finds the 2-letter ISO country code from a country name.
-    Returns None if not found.
-    """
-    if not country_name:
-        return None
-    try:
-        # Search for the country by its common name
-        country = pycountry.countries.get(name=country_name)
-        if country:
-            return country.alpha_2
-        # If not found, try a fuzzy search (e.g., "United States" vs "United States of America")
-        country = pycountry.countries.search_fuzzy(country_name)
-        if country:
-            return country[0].alpha_2
-    except (AttributeError, KeyError, LookupError):
-        # Handle cases where the library can't find a match
-        return None
-    return None
-
+## ----------------- Frontend Serving Route ----------------- ##
 
 @app.route('/dashboard')
 def dashboard():
+    """Serves the main dashboard.html file."""
     return render_template('dashboard.html')
+
+## ----------------- API Endpoints for Dashboard ----------------- ##
 
 @app.route('/api/analytics', methods=['GET'])
 def get_analytics():
+    """
+    Serves aggregated data for the top charts (map, trends).
+    This has been updated to read from the new 'page_views' table.
+    """
     try:
         params = {
             'country_filter': request.args.get('country') or None,
@@ -51,9 +37,11 @@ def get_analytics():
             'end_date_filter': request.args.get('end_date') or None,
             'visitor_type_filter': request.args.get('visitor_type') or None,
         }
+        # Calls the updated RPC function that now queries the page_views table
         response = supabase.rpc('get_filtered_analytics_visual', params).execute()
         data = response.data
 
+        # Calculate repeated visitors (total views - unique users)
         if data and 'stats' in data:
             total = data['stats'].get('total_visitors', 0)
             unique = data['stats'].get('unique_visitors', 0)
@@ -61,42 +49,61 @@ def get_analytics():
 
         return jsonify(data)
     except Exception as e:
-        print(f"AN ERROR OCCURRED IN /api/analytics: {e}") 
+        print(f"AN ERROR OCCURRED IN /api/analytics: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/track', methods=['POST'])
-def track():
-    data = request.get_json()
+@app.route('/api/sessions', methods=['GET'])
+def get_sessions():
+    """
+    NEW: Serves the detailed session data for the user journey section.
+    """
+    try:
+        # Calls the new RPC function to get aggregated session journeys
+        response = supabase.rpc('get_session_analytics').execute()
+        return jsonify(response.data)
+    except Exception as e:
+        print(f"AN ERROR OCCURRED IN /api/sessions: {e}")
+        return jsonify({"error": str(e)}), 500
+
+## ----------------- Data Tracking Endpoint ----------------- ##
+
+@app.route('/track-pageview', methods=['POST'])
+def track_pageview():
+    """
+    UPDATED: Receives all page view data from the new tracker,
+    including session IDs, time spent, and location.
+    """
+    data = None
+    try:
+        # Handles data sent via navigator.sendBeacon()
+        data = json.loads(request.get_data(as_text=True))
+    except (json.JSONDecodeError, TypeError):
+        return jsonify({"error": "Invalid data format"}), 400
+
     if not data:
-        return jsonify({"error": "Invalid JSON"}), 400
-    
-    user_agent_string = data.get("userAgent", "")
-    user_agent = parse(user_agent_string)
-    
-    device_type = "Desktop"
-    if user_agent.is_mobile:
-        device_type = "Mobile"
-    elif user_agent.is_tablet:
-        device_type = "Tablet"
+        return jsonify({"error": "No data received"}), 400
 
-    country_name = data.get("country")
-
-    visitor_data = {
-        "public_ip": data.get("publicIp"),
-        "country": country_name,
-        # --- UPDATED: Use our new function instead of the old dictionary ---
-        "country_code": get_country_code(country_name), 
+    # Prepare the data object for insertion into the 'page_views' table
+    page_view_data = {
+        "user_id": data.get("user_id"),
+        "session_id": data.get("session_id"),
+        "page_visited": data.get("page_visited"),
+        "previous_page": data.get("previous_page"),
+        "time_spent_seconds": data.get("time_spent_seconds"),
+        "user_agent": data.get("user_agent"),
+        "country": data.get("country"),
         "city": data.get("city"),
-        "page_visited": data.get("pageVisited"),
-        "user_agent": user_agent_string,
-        "device_type": device_type,
-        "browser": user_agent.browser.family,
-        "operating_system": user_agent.os.family
+        "country_code": data.get("country_code"),
     }
 
+    # Validate essential fields
+    if not all([page_view_data["user_id"], page_view_data["session_id"]]):
+        return jsonify({"error": "Missing required fields: user_id or session_id"}), 400
+
     try:
-        supabase.table('visitors').insert(visitor_data).execute()
-        return jsonify({"success": True}), 201
+        # Insert the validated data into the Supabase table
+        supabase.table('page_views').insert(page_view_data).execute()
+        return jsonify({"success": True}), 200
     except Exception as e:
-        print(f"AN ERROR OCCURRED IN /track: {e}") 
+        print(f"AN ERROR OCCURRED IN /track-pageview: {e}")
         return jsonify({"error": str(e)}), 500
