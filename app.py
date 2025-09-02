@@ -1,4 +1,5 @@
 import os
+import json # <-- ADD THIS IMPORT
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
 from supabase import create_client, Client
@@ -82,7 +83,7 @@ def track():
         "device_type": device_type,
         "browser": user_agent.browser.family,
         "operating_system": user_agent.os.family,
-        "session_id": data.get("sessionId") # <-- SAVE THE SESSION ID
+        "session_id": data.get("sessionId")
     }
 
     try:
@@ -92,13 +93,18 @@ def track():
         print(f"AN ERROR OCCURRED IN /track: {e}")
         return jsonify({"error": str(e)}), 500
 
-# --- NEW ENDPOINT TO TRACK PAGE DURATION ---
+# --- UPDATED/CORRECTED ENDPOINT ---
 @app.route('/track_duration', methods=['POST'])
 def track_duration():
-    # The data is sent as text/plain, so we use get_data()
-    raw_data = request.get_data(as_text=True)
     try:
-        data = request.json
+        # get_data() reads the raw request body, which is what we need for sendBeacon
+        raw_data = request.get_data(as_text=True)
+        if not raw_data:
+            return jsonify({"error": "No data received"}), 400
+        
+        # Manually parse the JSON string into a Python dictionary
+        data = json.loads(raw_data)
+        
         session_id = data.get('sessionId')
         time_spent = data.get('timeSpentSeconds')
 
@@ -116,5 +122,4 @@ def track_duration():
         # This endpoint is called via sendBeacon, which doesn't process responses.
         # So we just log the error for debugging.
         print(f"AN ERROR OCCURRED IN /track_duration: {e}")
-        print(f"RAW DATA: {raw_data}")
         return jsonify({"error": str(e)}), 500
