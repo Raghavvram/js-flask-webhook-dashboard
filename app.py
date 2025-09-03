@@ -37,11 +37,15 @@ def dashboard():
 @app.route('/api/analytics', methods=['GET'])
 def get_analytics():
     try:
+        # UPDATED: Read all new filter parameters from the request URL
         params = {
-            'country_filter': request.args.get('country') or None,
-            'start_date_filter': request.args.get('start_date') or None,
-            'end_date_filter': request.args.get('end_date') or None,
-            'visitor_type_filter': request.args.get('visitor_type') or None,
+            'country_filter': request.args.get('country_filter') or None,
+            'start_date_filter': request.args.get('start_date_filter') or None,
+            'end_date_filter': request.args.get('end_date_filter') or None,
+            'visitor_type_filter': request.args.get('visitor_type_filter') or None,
+            'device_filter': request.args.get('device_filter') or None,
+            'url_filter': request.args.get('url_filter') or None,
+            'browser_filter': request.args.get('browser_filter') or None,
         }
         response = supabase.rpc('get_filtered_analytics_visual', params).execute()
         data = response.data

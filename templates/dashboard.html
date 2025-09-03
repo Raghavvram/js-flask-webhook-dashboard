@@ -32,10 +32,14 @@
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-4xl font-bold text-center text-gray-100 mb-8">Analytics Dashboard</h1>
         
-        <div class="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-md mb-8 flex flex-wrap items-center gap-4">
-            <div class="flex-grow min-w-[150px]"><label class="text-sm font-medium text-gray-400">Country</label><select id="country-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700"><option value="">All Countries</option></select></div>
-            <div class="flex-grow min-w-[200px]"><label class="text-sm font-medium text-gray-400">Date Range</label><input id="date-filter" type="text" placeholder="All Time" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700"></div>
-            <div class="flex items-end pt-5"><button id="apply-filters-btn" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700">Apply</button></div>
+        <div class="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-md mb-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            <div class="lg:col-span-1"><label class="text-sm font-medium text-gray-400">Date Range</label><input id="date-filter" type="text" placeholder="All Time" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700"></div>
+            <div class="lg:col-span-1"><label class="text-sm font-medium text-gray-400">Country</label><select id="country-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700"><option value="">All Countries</option></select></div>
+            <div class="lg:col-span-1"><label class="text-sm font-medium text-gray-400">Visitor Type</label><select id="visitor-type-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700"></select></div>
+            <div class="lg:col-span-1"><label class="text-sm font-medium text-gray-400">Device</label><select id="device-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700"><option value="">All Devices</option></select></div>
+            <div class="lg:col-span-1"><label class="text-sm font-medium text-gray-400">Browser</label><select id="browser-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700"><option value="">All Browsers</option></select></div>
+            <div class="lg:col-span-1"><label class="text-sm font-medium text-gray-400">URL</label><select id="url-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700"><option value="">All URLs</option></select></div>
+            <div class="flex items-end"><button id="apply-filters-btn" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700">Apply</button></div>
         </div>
         
         <div id="stats-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"></div>
@@ -53,8 +57,7 @@
 
         <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-md">
             <div class="p-4 border-b border-gray-700"><h3 class="text-lg font-semibold text-gray-100">Recent Visitors</h3></div>
-            <div id="visitors-container" class="p-4 space-y-3">
-                </div>
+            <div id="visitors-container" class="p-4 space-y-3"></div>
         </div>
     </div>
 
@@ -62,107 +65,62 @@
     let mapRoot, dateChart, deviceChart, browserChart, datePicker;
     const loader = document.getElementById('loader-overlay');
 
-    function formatDuration(seconds) {
-        if (seconds === null || isNaN(seconds) || seconds < 0) return "N/A";
-        if (seconds < 60) return `${Math.round(seconds)}s`;
-        const minutes = Math.floor(seconds / 60);
-        const rem = Math.round(seconds % 60);
-        return `${minutes}m ${rem}s`;
-    }
-
-    function renderStats(stats = {}) {
-        const totalVisitors = stats.total_visitors || 0;
-        const uniqueVisitors = stats.unique_visitors || 0;
-        const repeatedVisitors = stats.repeated_visitors || 0;
-        const avgDuration = stats.avg_time_on_page || 0;
-
-        document.getElementById("stats-grid").innerHTML = `
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Total Visits</h3><p class="text-3xl font-bold mt-2">${totalVisitors}</p></div>
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Unique Visitors</h3><p class="text-3xl font-bold mt-2">${uniqueVisitors}</p></div>
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Repeated Visitors</h3><p class="text-3xl font-bold mt-2">${repeatedVisitors > 0 ? repeatedVisitors : 0}</p></div>
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Avg. Time on Page</h3><p class="text-3xl font-bold mt-2">${formatDuration(avgDuration)}</p></div>`;
-    }
-
-    // --- NEW: Renders a single visit row inside a collapsible group ---
-    function createSingleVisitHTML(visitor) {
-        return `
-        <div class="grid grid-cols-[1.5fr_2fr_1fr_2fr] gap-4 items-center px-3 py-2 border-t border-gray-700/50 text-sm">
-            <div>
-                <p class="text-gray-300">${visitor.device_type || 'N/A'}</p>
-                <p class="text-gray-400 text-xs">${visitor.browser || 'N/A'} on ${visitor.operating_system || 'N/A'}</p>
-            </div>
-            <div>
-                <p class="text-gray-300 break-all" title="${visitor.page_visited || ''}">${visitor.page_visited || 'N/A'}</p>
-            </div>
-            <div class="text-center">
-                <span class="font-semibold text-gray-200">${formatDuration(visitor.time_spent_seconds)}</span>
-            </div>
-            <div class="text-right">
-                <p class="text-gray-300">${new Date(visitor.created_at).toLocaleString()}</p>
-            </div>
-        </div>`;
-    }
-    
-    // --- NEW: Renders the collapsible group for an IP address ---
-    function createGroupHTML(ip, visits) {
-        const visitsHTML = visits.map(createSingleVisitHTML).join('');
-        // By default, collapse groups with more than one visit
-        const isCollapsed = visits.length > 1;
-
-        return `
-        <div class="bg-gray-800/50 rounded-lg border border-gray-700/50">
-            <div class="group-header p-3 cursor-pointer flex justify-between items-center hover:bg-gray-700/50">
-                <div>
-                    <span class="font-mono text-indigo-400">${ip}</span>
-                    <span class="ml-4 px-2 py-1 bg-gray-600 text-gray-200 text-xs rounded-full">${visits.length} ${visits.length > 1 ? 'visits' : 'visit'}</span>
-                </div>
-                <svg class="chevron-icon w-5 h-5 text-gray-400 transition-transform transform ${isCollapsed ? '-rotate-90' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-            </div>
-            <div class="visits-container ${isCollapsed ? 'collapsed' : ''}">
-                ${visitsHTML}
-            </div>
-        </div>`;
-    }
-
-    // --- UPDATED: Groups visitors by IP before rendering ---
-    function renderVisitors(visitors = []) {
-        const container = document.getElementById('visitors-container');
-        if (!visitors || visitors.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 text-center py-8">No visitor data for this period.</p>';
-            return;
-        }
-
-        const groupedByIp = visitors.reduce((acc, visitor) => {
-            const ip = visitor.public_ip || 'Unknown IP';
-            if (!acc[ip]) acc[ip] = [];
-            acc[ip].push(visitor);
-            return acc;
-        }, {});
-
-        container.innerHTML = Object.entries(groupedByIp)
-            .map(([ip, visits]) => createGroupHTML(ip, visits))
-            .join('');
-    }
-    
+    function formatDuration(seconds) { /* ... function unchanged ... */ if (seconds === null || isNaN(seconds) || seconds < 0) return "N/A"; if (seconds < 60) return `${Math.round(seconds)}s`; const minutes = Math.floor(seconds / 60); const rem = Math.round(seconds % 60); return `${minutes}m ${rem}s`; }
+    function renderStats(stats = {}) { /* ... function unchanged ... */ const totalVisitors = stats.total_visitors || 0; const uniqueVisitors = stats.unique_visitors || 0; const repeatedVisitors = (stats.total_visitors || 0) - (stats.unique_visitors || 0); const avgDuration = stats.avg_time_on_page || 0; document.getElementById("stats-grid").innerHTML = `<div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Total Visits</h3><p class="text-3xl font-bold mt-2">${totalVisitors}</p></div><div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Unique Visitors</h3><p class="text-3xl font-bold mt-2">${uniqueVisitors}</p></div><div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Repeated Visitors</h3><p class="text-3xl font-bold mt-2">${repeatedVisitors > 0 ? repeatedVisitors : 0}</p></div><div class="bg-gray-800 p-6 rounded-lg border border-gray-700"><h3 class="text-sm font-medium text-gray-400">Avg. Time on Page</h3><p class="text-3xl font-bold mt-2">${formatDuration(avgDuration)}</p></div>`;}
+    function createSingleVisitHTML(visitor) { /* ... function unchanged ... */ return `<div class="grid grid-cols-[1.5fr_2fr_1fr_2fr] gap-4 items-center px-3 py-2 border-t border-gray-700/50 text-sm"><div><p class="text-gray-300">${visitor.device_type || 'N/A'}</p><p class="text-gray-400 text-xs">${visitor.browser || 'N/A'} on ${visitor.operating_system || 'N/A'}</p></div><div><p class="text-gray-300 break-all" title="${visitor.page_visited || ''}">${visitor.page_visited || 'N/A'}</p></div><div class="text-center"><span class="font-semibold text-gray-200">${formatDuration(visitor.time_spent_seconds)}</span></div><div class="text-right"><p class="text-gray-300">${new Date(visitor.created_at).toLocaleString()}</p></div></div>`; }
+    function createGroupHTML(ip, visits) { /* ... function unchanged ... */ const visitsHTML = visits.map(createSingleVisitHTML).join(''); const isCollapsed = visits.length > 1; return `<div class="bg-gray-800/50 rounded-lg border border-gray-700/50"><div class="group-header p-3 cursor-pointer flex justify-between items-center hover:bg-gray-700/50"><div><span class="font-mono text-indigo-400">${ip}</span><span class="ml-4 px-2 py-1 bg-gray-600 text-gray-200 text-xs rounded-full">${visits.length} ${visits.length > 1 ? 'visits' : 'visit'}</span></div><svg class="chevron-icon w-5 h-5 text-gray-400 transition-transform transform ${isCollapsed ? '-rotate-90' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></div><div class="visits-container ${isCollapsed ? 'collapsed' : ''}">${visitsHTML}</div></div>`; }
+    function renderVisitors(visitors = []) { /* ... function unchanged ... */ const container = document.getElementById('visitors-container'); if (!visitors || visitors.length === 0) { container.innerHTML = '<p class="text-gray-500 text-center py-8">No visitor data for this period.</p>'; return; } const groupedByIp = visitors.reduce((acc, visitor) => { const ip = visitor.public_ip || 'Unknown IP'; if (!acc[ip]) acc[ip] = []; acc[ip].push(visitor); return acc; }, {}); container.innerHTML = Object.entries(groupedByIp).map(([ip, visits]) => createGroupHTML(ip, visits)).join(''); }
     function renderMap(countryData = []) { /* ... function unchanged ... */ if (mapRoot) mapRoot.dispose(); mapRoot = am5.Root.new("chartdiv"); mapRoot.setThemes([am5themes_Animated.new(mapRoot)]); let chart = mapRoot.container.children.push(am5map.MapChart.new(mapRoot, { panX: "rotateX", projection: am5map.geoMercator() })); let polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(mapRoot, { geoJSON: am5geodata_worldLow, exclude: ["AQ"], valueField: "value" })); polygonSeries.mapPolygons.template.setAll({ tooltipText: "{name}: {value}", interactive: true, fill: am5.color(0x4a5568) }); polygonSeries.mapPolygons.template.states.create("hover", { fill: am5.color(0x4f46e5) }); polygonSeries.set("heatRules", [{ target: polygonSeries.mapPolygons.template, key: "fill", min: am5.color(0x4a5568), max: am5.color(0x6366f1), dataField: "value" }]); polygonSeries.data.setAll(countryData); }
     function renderBreakdownCharts(deviceData = [], browserData = []) { /* ... function unchanged ... */ const chartOptions = { responsive: true, plugins: { legend: { position: "bottom", labels: { boxWidth: 12, color: '#a1a1aa' } } } }; if (deviceChart) deviceChart.destroy(); deviceChart = new Chart(document.getElementById("device-chart").getContext("2d"), { type: "pie", data: { labels: deviceData.map(d => d.device_type), datasets: [{ data: deviceData.map(d => d.count), backgroundColor: ["#4F46E5", "#7C3AED", "#EC4899"] }] }, options: chartOptions }); if (browserChart) browserChart.destroy(); browserChart = new Chart(document.getElementById("browser-chart").getContext("2d"), { type: "doughnut", data: { labels: browserData.map(d => d.browser), datasets: [{ data: browserData.map(d => d.count), backgroundColor: ["#10B981", "#F59E0B", "#3B82F6", "#D946EF", "#EF4444"] }] }, options: chartOptions }); }
     function renderDateChart(dateData = []) { /* ... function unchanged ... */ if (dateChart) dateChart.destroy(); dateChart = new Chart(document.getElementById("date-chart"), { type: "line", data: { labels: dateData.map(d => new Date(d.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })), datasets: [{ label: "Sessions", data: dateData.map(d => d.count), borderColor: "#4F46E5", backgroundColor: "rgba(79,70,229,0.1)", fill: true, tension: .3 }] }, options: { responsive: true, scales: { y: { ticks: { color: "#a1a1aa" } }, x: { ticks: { color: "#a1a1aa" } } }, plugins: { legend: { display: false } } } }); }
-    function populateCountryFilter(countries = []) { /* ... function unchanged ... */ const select = document.getElementById("country-filter"); select.innerHTML = '<option value="">All Countries</option>'; countries.sort().forEach(countryName => { const option = document.createElement("option"); option.value = countryName; option.textContent = countryName; select.appendChild(option); }); }
+    
+    // NEW: A generic function to populate select dropdowns
+    function populateSelectFilter(selectId, options, defaultLabel) {
+        const select = document.getElementById(selectId);
+        // Only populate if it hasn't been populated before
+        if (select.options.length > 1) return; 
+
+        select.innerHTML = `<option value="">${defaultLabel}</option>`;
+        (options || []).sort().forEach(item => {
+            const option = document.createElement("option");
+            option.value = item;
+            option.textContent = item;
+            select.appendChild(option);
+        });
+    }
+
+    // NEW: Function to populate the static visitor type dropdown
+    function populateVisitorTypeFilter() {
+        const select = document.getElementById("visitor-type-filter");
+        select.innerHTML = `
+            <option value="all">All Visitors</option>
+            <option value="unique">Unique</option>
+            <option value="repeated">Repeated</option>
+        `;
+    }
 
     async function fetchAndRenderData() {
         loader.classList.remove('hidden');
+        
+        // UPDATED: Read values from all new filter dropdowns
         const params = new URLSearchParams({
-            ...(document.getElementById("country-filter").value && { country: document.getElementById("country-filter").value }),
-            ...(datePicker.getStartDate() && { start_date: datePicker.getStartDate().toISOString() }),
-            ...(datePicker.getEndDate() && { end_date: datePicker.getEndDate().toISOString() })
+            // Note: The keys here (e.g., country_filter) must match the SQL function's parameter names
+            ...(document.getElementById("country-filter").value && { country_filter: document.getElementById("country-filter").value }),
+            ...(datePicker.getStartDate() && { start_date_filter: datePicker.getStartDate().toISOString() }),
+            ...(datePicker.getEndDate() && { end_date_filter: datePicker.getEndDate().toISOString() }),
+            ...(document.getElementById("visitor-type-filter").value && { visitor_type_filter: document.getElementById("visitor-type-filter").value }),
+            ...(document.getElementById("device-filter").value && { device_filter: document.getElementById("device-filter").value }),
+            ...(document.getElementById("browser-filter").value && { browser_filter: document.getElementById("browser-filter").value }),
+            ...(document.getElementById("url-filter").value && { url_filter: document.getElementById("url-filter").value })
         });
         
         try {
             const response = await fetch(`/api/analytics?${params.toString()}`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
+            
+            // The logic for repeated_visitors is now handled in the backend, but we can ensure it's correct here
+            data.stats.repeated_visitors = (data.stats.total_visitors || 0) - (data.stats.unique_visitors || 0);
 
             renderStats(data.stats);
             renderMap(data.charts.by_country);
@@ -170,9 +128,12 @@
             renderDateChart(data.charts.by_date);
             renderVisitors(data.visitor_list);
 
-            if (document.getElementById("country-filter").options.length <= 1) {
-                populateCountryFilter(data.meta.distinct_countries);
-            }
+            // UPDATED: Populate all dynamic filters on the initial load
+            populateSelectFilter("country-filter", data.meta.distinct_countries, "All Countries");
+            populateSelectFilter("device-filter", data.meta.distinct_devices, "All Devices");
+            populateSelectFilter("browser-filter", data.meta.distinct_browsers, "All Browsers");
+            populateSelectFilter("url-filter", data.meta.distinct_urls, "All URLs");
+
         } catch (error) {
             console.error("Failed to load analytics data:", error);
             document.body.innerHTML = `<div class="text-center p-8 text-red-400">Failed to load analytics data. Check the console and ensure the Flask server is running.</div>`;
@@ -185,7 +146,6 @@
         datePicker = new Litepicker({ element: document.getElementById('date-filter'), singleMode: false, format: 'MMM D, YYYY' });
         document.getElementById('apply-filters-btn').addEventListener('click', fetchAndRenderData);
         
-        // --- NEW: Event listener for collapsing groups ---
         document.getElementById('visitors-container').addEventListener('click', (event) => {
             const header = event.target.closest('.group-header');
             if (header) {
@@ -196,6 +156,9 @@
             }
         });
         
+        // Populate the static visitor type filter right away
+        populateVisitorTypeFilter();
+        // Fetch initial data for the dashboard
         fetchAndRenderData();
     });
 </script>
