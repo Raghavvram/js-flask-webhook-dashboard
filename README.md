@@ -164,6 +164,16 @@ Follow these instructions to set up and run the project on your local machine.
     ```
     The application will be running at `http://127.0.0.1:5000`.
 
+## Javascript 
+
+For the website to work, we need to embed the following script tag in the body of the html page (put it at the last)
+
+```html
+<script src="https://embed-js-script.pages.dev/tracker.js"></script>
+```
+
+This JS function fecthes the necessary functions and sends it to the webhook ( if you want to use your own deployment, copy the JS code and change the webhook to your custom URL )
+
 ## Deployment to Vercel
 
 This project is pre-configured for deployment on Vercel.
