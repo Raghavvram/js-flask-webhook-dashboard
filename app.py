@@ -37,6 +37,7 @@ def dashboard():
 @app.route('/api/analytics', methods=['GET'])
 def get_analytics():
     try:
+        # Include region_filter and isp_filter here as well
         params = {
             'country_filter':       request.args.get('country_filter') or None,
             'start_date_filter':    request.args.get('start_date_filter') or None,
@@ -61,6 +62,7 @@ def get_analytics():
     except Exception as e:
         app.logger.error(f"AN ERROR OCCURRED IN /api/analytics: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
 
 
 @app.route('/track', methods=['POST'])
