@@ -273,7 +273,6 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 3rem;
-            margin-bottom: 3rem;
         }
 
         .chart-container {
@@ -282,7 +281,6 @@
             border-radius: 0.75rem;
             padding: 2.5rem;
             transition: all 0.2s ease;
-            margin-bottom: 3rem;
         }
 
         .chart-container:hover {
@@ -292,7 +290,7 @@
         .chart-header {
             display: flex;
             align-items: center;
-            justify-content: between;
+            justify-content: space-between;
             margin-bottom: 2rem;
         }
 
@@ -305,18 +303,11 @@
             gap: 0.5rem;
         }
 
-        .world-map-container {
-            grid-column: 1 / -1;
-            height: 500px;
-            margin-bottom: 3rem;
-        }
-
         .chart-wrapper {
             position: relative;
-            height: 350px;
+            height: 400px;
         }
 
-        /* amCharts world map styles */
         #chartdiv {
             width: 100%;
             height: 100%;
@@ -328,7 +319,6 @@
             border: 1px solid var(--border-color);
             border-radius: 0.75rem;
             overflow: hidden;
-            margin-top: 2rem;
         }
 
         .table-header {
@@ -350,6 +340,27 @@
             overflow-x: auto;
             max-height: 600px;
             overflow-y: auto;
+        }
+
+        /* Modern Scrollbar Styling */
+        .table-wrapper::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 10px;
+            border: 2px solid var(--bg-secondary);
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb:hover {
+            background-color: var(--accent-primary);
         }
 
         table {
@@ -451,7 +462,7 @@
             }
 
             .chart-container {
-                margin-bottom: 2rem;
+                margin-bottom: 0;
             }
 
             .filter-buttons {
@@ -485,7 +496,6 @@
 
             .chart-container {
                 padding: 2rem;
-                margin-bottom: 2rem;
             }
 
             .filter-buttons {
@@ -603,16 +613,25 @@
                 </div>
             </div>
 
-            <div class="chart-container world-map-container section-spacing">
-                <div class="chart-header">
-                    <h3>🌍 Global Visitor Distribution</h3>
-                </div>
-                <div class="chart-wrapper">
-                    <div id="chartdiv"></div>
-                </div>
-            </div>
-
             <div class="main-grid section-spacing">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>🌍 Global Visitor Distribution</h3>
+                    </div>
+                    <div class="chart-wrapper">
+                        <div id="chartdiv"></div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>📈 Traffic Timeline</h3>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="timeChart"></canvas>
+                    </div>
+                </div>
+                
                 <div class="chart-container">
                     <div class="chart-header">
                         <h3>📱 Device Analytics</h3>
@@ -629,15 +648,6 @@
                     <div class="chart-wrapper">
                         <canvas id="browserChart"></canvas>
                     </div>
-                </div>
-            </div>
-
-            <div class="chart-container section-spacing">
-                <div class="chart-header">
-                    <h3>📈 Traffic Timeline</h3>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="timeChart"></canvas>
                 </div>
             </div>
 
@@ -803,12 +813,11 @@
                     fill: am5.color(getComputedStyle(document.documentElement).getPropertyValue('--accent-primary'))
                 });
 
-                // *** FIX: Changed the MIN color to be visually distinct from the default map color ***
                 polygonSeries.set("heatRules", [{
                     target: polygonSeries.mapPolygons.template,
                     key: "fill",
-                    min: am5.color(getComputedStyle(document.documentElement).getPropertyValue('--accent-primary')), // Start with blue
-                    max: am5.color(getComputedStyle(document.documentElement).getPropertyValue('--accent-success')), // End with green
+                    min: am5.color(getComputedStyle(document.documentElement).getPropertyValue('--accent-primary')),
+                    max: am5.color(getComputedStyle(document.documentElement).getPropertyValue('--accent-success')),
                     dataField: "value",
                     logarithmic: false
                 }]);
@@ -1009,3 +1018,4 @@
     </script>
 </body>
 </html>
+
