@@ -1,123 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Analytics Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/bundle.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css" />
   <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
   <style>
-    #chartdiv { width: 100%; height: 500px; }
+    #chartdiv { width: 100%; height: 480px; border-radius: 0.5rem; }
     .loader { border-top-color: #4f46e5; animation: spinner 1.5s linear infinite; }
     @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .visits-container { overflow: hidden; max-height: 1000px; transition: max-height 0.4s; }
+    .visits-container { overflow: hidden; max-height: 1000px; transition: max-height 0.3s ease; }
     .visits-container.collapsed { max-height: 0; }
+    /* Scroll container for Recent Visitors */
+    #visitors-container {
+      max-height: 400px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #7c3aed #1f2937;
+    }
+    #visitors-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    #visitors-container::-webkit-scrollbar-thumb {
+      background-color: #7c3aed;
+      border-radius: 10px;
+    }
   </style>
 </head>
-<body class="bg-gray-900 text-gray-200">
-  <div id="loader-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center hidden">
-    <div class="loader rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
+<body class="bg-gray-900 text-gray-200 min-h-screen flex flex-col">
+  <div id="loader-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-90 flex items-center justify-center hidden z-50">
+    <div class="loader rounded-full border-8 border-t-8 border-gray-200 h-24 w-24"></div>
   </div>
-  <div class="container mx-auto p-8">
-    <h1 class="text-4xl font-bold text-center mb-8">Analytics Dashboard</h1>
-    <!-- Filters -->
-    <div class="grid gap-4 bg-gray-800 p-4 rounded mb-8 grid-cols-2 sm:grid-cols-4 lg:grid-cols-10">
-      <div class="col-span-2 sm:col-span-1">
-        <label class="block text-gray-400">Date Range</label>
-        <input id="date-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded" placeholder="All Time">
+
+  <header class="bg-gray-800 shadow p-6">
+    <h1 class="text-4xl font-semibold text-center text-indigo-400 tracking-wide">Analytics Dashboard</h1>
+  </header>
+
+  <main class="flex-grow container mx-auto px-6 py-8 max-w-7xl">
+    <!-- Filters Grid -->
+    <section class="bg-gray-800 rounded-lg p-6 shadow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-5 mb-8">
+      <div class="col-span-1 md:col-span-2">
+        <label for="date-filter" class="block text-sm font-medium text-gray-400 mb-1">Date Range</label>
+        <input id="date-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="All Time" />
       </div>
       <div>
-        <label class="block text-gray-400">Visitor Type</label>
-        <select id="visitor-type-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded"></select>
+        <label for="visitor-type-filter" class="block text-sm font-medium text-gray-400 mb-1">Visitor Type</label>
+        <select id="visitor-type-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
       </div>
       <div>
-        <label class="block text-gray-400">Country</label>
-        <select id="country-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded"></select>
+        <label for="country-filter" class="block text-sm font-medium text-gray-400 mb-1">Country</label>
+        <select id="country-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
       </div>
       <div>
-        <label class="block text-gray-400">Region</label>
-        <select id="region-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded"></select>
+        <label for="isp-filter" class="block text-sm font-medium text-gray-400 mb-1">ISP</label>
+        <select id="isp-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
       </div>
       <div>
-        <label class="block text-gray-400">ISP</label>
-        <select id="isp-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded"></select>
+        <label for="device-filter" class="block text-sm font-medium text-gray-400 mb-1">Device</label>
+        <select id="device-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
       </div>
       <div>
-        <label class="block text-gray-400">Device</label>
-        <select id="device-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded"></select>
+        <label for="browser-filter" class="block text-sm font-medium text-gray-400 mb-1">Browser</label>
+        <select id="browser-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
       </div>
       <div>
-        <label class="block text-gray-400">Browser</label>
-        <select id="browser-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded"></select>
+        <label for="url-filter" class="block text-sm font-medium text-gray-400 mb-1">URL</label>
+        <select id="url-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
       </div>
       <div>
-        <label class="block text-gray-400">URL</label>
-        <select id="url-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded"></select>
-      </div>
-      <div>
-        <label class="block text-gray-400">IP Address</label>
-        <input id="ip-filter" list="ip-list" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded" placeholder="Filter by IP...">
+        <label for="ip-filter" class="block text-sm font-medium text-gray-400 mb-1">IP Address</label>
+        <input id="ip-filter" list="ip-list" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Filter by IP..." />
         <datalist id="ip-list"></datalist>
       </div>
-      <div class="flex items-end space-x-2 col-span-2 lg:col-span-1">
-        <button id="reset-filters-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded">Reset</button>
+      <div class="col-span-1 sm:col-span-2 lg:col-span-8 flex justify-between mt-4 space-x-4">
+        <button id="reset-filters-btn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded text-lg font-semibold transition">Reset</button>
+        <button id="apply-filters-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded text-lg font-semibold transition">Apply Filters</button>
       </div>
-      <div class="flex items-end justify-end col-span-2 lg:col-span-1">
-        <button id="apply-filters-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded">Apply Filters</button>
-      </div>
-    </div>
+    </section>
 
-    <!-- Stats -->
-    <div id="stats-grid" class="grid gap-6 mb-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4"></div>
+    <!-- Stats Cards -->
+    <section id="stats-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      <!-- Stat cards injected dynamically -->
+    </section>
 
-    <!-- Charts -->
-    <div class="grid gap-8 mb-8 grid-cols-1 lg:grid-cols-3">
+    <!-- Main Charts Area -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-7 mb-12">
       <div class="lg:col-span-2 space-y-8">
-        <div class="bg-gray-800 p-6 rounded">
-          <h3 class="text-xl font-semibold mb-4">Visitors by Country</h3>
+        <div class="bg-gray-800 p-6 rounded-lg shadow">
+          <h3 class="text-xl font-semibold mb-5 text-indigo-400">Visitors by Country</h3>
           <div id="chartdiv"></div>
         </div>
-        <div class="bg-gray-800 p-6 rounded">
-          <h3 class="text-xl font-semibold mb-4">Visitors by Region</h3>
-          <canvas id="region-chart"></canvas>
-        </div>
-      </div>
-      <div class="space-y-8">
-        <div class="bg-gray-800 p-6 rounded">
-          <h3 class="text-xl font-semibold mb-4">Visitors by ISP</h3>
-          <canvas id="isp-chart"></canvas>
-        </div>
-        <div class="bg-gray-800 p-6 rounded">
-          <h3 class="text-xl font-semibold mb-4">Visitors by Date</h3>
-          <canvas id="date-chart"></canvas>
-        </div>
-        <div class="bg-gray-800 p-6 rounded">
-          <h3 class="text-xl font-semibold mb-4">Visitors by Device</h3>
-          <canvas id="device-chart"></canvas>
-        </div>
-        <div class="bg-gray-800 p-6 rounded">
-          <h3 class="text-xl font-semibold mb-4">Top Browsers</h3>
-          <canvas id="browser-chart"></canvas>
-        </div>
-      </div>
-    </div>
 
-    <!-- Recent Visitors -->
-    <div class="bg-gray-800 rounded">
-      <div class="p-4 border-b border-gray-700">
-        <h3 class="text-xl font-semibold">Recent Visitors</h3>
+        <div class="bg-gray-800 p-6 rounded-lg shadow">
+          <h3 class="text-xl font-semibold mb-5 text-indigo-400">Visitors by ISP</h3>
+          <canvas id="isp-chart" class="w-full" style="min-height: 260px;"></canvas>
+        </div>
       </div>
-      <div id="visitors-container" class="p-4 space-y-3"></div>
-    </div>
-  </div>
+
+      <div class="space-y-8">
+        <div class="bg-gray-800 p-6 rounded-lg shadow">
+          <h3 class="text-xl font-semibold mb-5 text-indigo-400">Visitors by Date</h3>
+          <canvas id="date-chart" class="w-full" style="min-height: 260px;"></canvas>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg shadow">
+          <h3 class="text-xl font-semibold mb-5 text-indigo-400">Visitors by Device</h3>
+          <canvas id="device-chart" class="w-full" style="min-height: 220px;"></canvas>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg shadow">
+          <h3 class="text-xl font-semibold mb-5 text-indigo-400">Top Browsers</h3>
+          <canvas id="browser-chart" class="w-full" style="min-height: 220px;"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Visitors Table -->
+    <section class="bg-gray-800 rounded-lg shadow">
+      <div class="p-4 border-b border-gray-700">
+        <h3 class="text-2xl font-semibold text-indigo-400">Recent Visitors</h3>
+      </div>
+      <div id="visitors-container" class="p-4 space-y-4 overflow-y-auto"></div>
+    </section>
+  </main>
 
   <script>
-    // Utility: format seconds to human-readable
+    // Utils
     function formatDuration(s) {
       if (!s || isNaN(s) || s < 0) return "N/A";
       if (s < 60) return `${Math.round(s)}s`;
@@ -125,315 +139,263 @@
       return `${m}m ${r}s`;
     }
 
-    // Render stats cards
     function renderStats(stats={}) {
       const t = stats.total_visitors || 0;
       const u = stats.unique_visitors || 0;
       const r = Math.max(0, t - u);
       const a = stats.avg_time_on_page || 0;
       document.getElementById("stats-grid").innerHTML = `
-        <div class="bg-gray-800 p-6 rounded border">
-          <h4 class="text-gray-400">Total Visits</h4>
-          <p class="text-3xl font-bold">${t}</p>
+        <div class="bg-gray-900 p-6 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
+          <h4 class="text-gray-400 text-sm font-medium mb-2">Total Visits</h4>
+          <p class="text-indigo-400 text-4xl font-extrabold">${t}</p>
         </div>
-        <div class="bg-gray-800 p-6 rounded border">
-          <h4 class="text-gray-400">Unique Visitors</h4>
-          <p class="text-3xl font-bold">${u}</p>
+        <div class="bg-gray-900 p-6 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
+          <h4 class="text-gray-400 text-sm font-medium mb-2">Unique Visitors</h4>
+          <p class="text-indigo-400 text-4xl font-extrabold">${u}</p>
         </div>
-        <div class="bg-gray-800 p-6 rounded border">
-          <h4 class="text-gray-400">Repeated Visitors</h4>
-          <p class="text-3xl font-bold">${r}</p>
+        <div class="bg-gray-900 p-6 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
+          <h4 class="text-gray-400 text-sm font-medium mb-2">Repeated Visitors</h4>
+          <p class="text-indigo-400 text-4xl font-extrabold">${r}</p>
         </div>
-        <div class="bg-gray-800 p-6 rounded border">
-          <h4 class="text-gray-400">Avg. Time on Page</h4>
-          <p class="text-3xl font-bold">${formatDuration(a)}</p>
+        <div class="bg-gray-900 p-6 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
+          <h4 class="text-gray-400 text-sm font-medium mb-2">Avg. Time on Page</h4>
+          <p class="text-indigo-400 text-4xl font-extrabold">${formatDuration(a)}</p>
         </div>`;
     }
 
-    // Populate visitor type dropdown
-    function populateVisitorTypeFilter() {
+    function populateVisitorTypeFilter(){
       document.getElementById("visitor-type-filter").innerHTML = `
         <option value="all">All Visitors</option>
         <option value="unique">Unique</option>
         <option value="repeated">Repeated</option>`;
     }
 
-    // Populate any select filter
-    function populateSelectFilter(id, opts, label) {
+    function populateSelectFilter(id, opts, label){
       const sel = document.getElementById(id);
       sel.innerHTML = `<option value="">${label}</option>`;
-      (opts || []).sort().forEach(o => {
-        const opt = document.createElement("option");
-        opt.value = o; opt.textContent = o;
-        sel.appendChild(opt);
+      (opts||[]).sort().forEach(o=>{
+        const opt=document.createElement("option");
+        opt.value=o; opt.textContent=o; sel.appendChild(opt);
       });
     }
 
-    // Single visitor row HTML
-    function createSingleVisitHTML(v) {
+    function createSingleVisitHTML(v){
       return `
-        <div class="grid grid-cols-2 md:grid-cols-[1.5fr_1.5fr_2fr_1fr_2fr] gap-2 border-t py-2 text-sm">
+        <div class="grid grid-cols-2 md:grid-cols-[1.5fr_1.5fr_2fr_1fr_2fr] gap-3 border-t border-gray-700 py-3 text-sm">
           <div>${v.country||'Unknown'}, ${v.city||'N/A'}</div>
-          <div>${v.device_type||'N/A'}<br/>
-            <span class="text-xs text-gray-400">
-              ${v.browser||''} on ${v.operating_system||''}
-            </span>
-          </div>
-          <div class="break-all">${v.page_visited||''}</div>
+          <div>${v.device_type||'N/A'}<br/><span class="text-xs text-gray-400">${v.browser||''} on ${v.operating_system||''}</span></div>
+          <div class="break-words">${v.page_visited||''}</div>
           <div class="text-center">${formatDuration(v.time_spent_seconds)}</div>
           <div class="text-right">${new Date(v.created_at).toLocaleString()}</div>
         </div>`;
     }
 
-    // Render recent visitors grouped by IP
-    function renderVisitors(visitors=[]) {
-      const cont = document.getElementById("visitors-container");
-      if (!visitors.length) {
-        cont.innerHTML = '<p class="text-gray-500 text-center py-8">No data.</p>';
+    function renderVisitors(visitors=[]){
+      const cont=document.getElementById("visitors-container");
+      if(!visitors.length){
+        cont.innerHTML = '<p class="text-center text-gray-500 py-10">No recent visitors data.</p>';
         return;
       }
-      const groups = visitors.reduce((acc, v) => {
-        const ip = v.public_ip || 'Unknown IP';
-        (acc[ip] ||= []).push(v);
-        return acc;
-      }, {});
-      cont.innerHTML = Object.entries(groups).map(([ip, vs]) => {
-        const rows = vs.map(createSingleVisitHTML).join("");
-        const collapsedClass = vs.length > 1 ? "collapsed" : "";
-        const rot = vs.length > 1 ? "-rotate-90" : "";
+      const groups=visitors.reduce((a,v)=>{
+        const ip=v.public_ip||'Unknown IP';
+        (a[ip]||(a[ip]=[])).push(v);
+        return a;
+      },{});
+      cont.innerHTML=Object.entries(groups).map(([ip,vs])=>{
+        const rows=vs.map(createSingleVisitHTML).join("");
+        const collapsed=vs.length>1?"collapsed":"";
+        const rot=collapsed?"-rotate-90":"";
         return `
-          <div class="bg-gray-800 rounded border">
-            <div class="p-3 flex justify-between cursor-pointer hover:bg-gray-700"
-                 onclick="this.nextElementSibling.classList.toggle('collapsed');
-                          this.querySelector('.chevron-icon').classList.toggle('-rotate-90');">
+          <div class="bg-gray-900 rounded-lg border border-gray-700">
+            <div class="p-4 flex justify-between cursor-pointer hover:bg-gray-700 select-none" onclick="this.nextElementSibling.classList.toggle('collapsed'); this.querySelector('.chevron-icon').classList.toggle('-rotate-90');">
               <div>
-                <code class="text-indigo-400">${ip}</code>
-                <span class="bg-gray-600 text-xs rounded px-2">
-                  ${vs.length} visit${vs.length>1?'s':''}
-                </span>
+                <code class="text-indigo-400 font-mono">${ip}</code>
+                <span class="bg-gray-700 text-xs rounded pl-2 pr-3 ml-2 tracking-tight">${vs.length} visit${vs.length>1?'s':''}</span>
               </div>
-              <svg class="chevron-icon w-5 h-5 text-gray-400 transform ${rot}"
-                   fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M19 9l-7 7-7-7"/>
+              <svg class="chevron-icon w-5 h-5 text-gray-400 transform transition-transform duration-200 ${rot}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
               </svg>
             </div>
-            <div class="visits-container ${collapsedClass}">${rows}</div>
+            <div class="visits-container px-4 pb-4 ${collapsed}">${rows}</div>
           </div>`;
       }).join("");
     }
 
-    // Render world map with amCharts
-    function renderMap(data=[]) {
-      if (window.mapRoot) mapRoot.dispose();
-      mapRoot = am5.Root.new("chartdiv");
+    // AmCharts map
+    function renderMap(data=[]){
+      if(window.mapRoot) mapRoot.dispose();
+      mapRoot=am5.Root.new("chartdiv");
       mapRoot.setThemes([am5themes_Animated.new(mapRoot)]);
-      const chart = mapRoot.container.children.push(
-        am5map.MapChart.new(mapRoot, { projection: am5map.geoMercator() })
-      );
-      const series = chart.series.push(
-        am5map.MapPolygonSeries.new(mapRoot, {
-          geoJSON: am5geodata_worldLow,
-          exclude: ["AQ"],
-          valueField: "value"
-        })
-      );
-      series.mapPolygons.template.setAll({
-        tooltipText: "{name}: {value}",
-        interactive: true,
-        fill: am5.color(0x4a5568)
-      });
-      series.mapPolygons.template.states.create("hover", {
-        fill: am5.color(0x4f46e5)
-      });
-      series.set("heatRules", [{
-        target: series.mapPolygons.template,
-        key: "fill",
-        min: am5.color(0x4a5568),
-        max: am5.color(0x6366f1),
-        dataField: "value"
+      const chart=mapRoot.container.children.push(am5map.MapChart.new(mapRoot,{
+        projection:am5map.geoMercator()
+      }));
+      const series=chart.series.push(am5map.MapPolygonSeries.new(mapRoot,{
+        geoJSON:am5geodata_worldLow,
+        exclude:["AQ"],
+        valueField:"value"
+      }));
+      series.mapPolygons.template.setAll({tooltipText:"{name}: {value}",interactive:true,fill:am5.color(0x4a5568)});
+      series.mapPolygons.template.states.create("hover",{fill:am5.color(0x4f46e5)});
+      series.set("heatRules",[{
+        target:series.mapPolygons.template,
+        key:"fill",
+        min:am5.color(0x4a5568),
+        max:am5.color(0x6366f1),
+        dataField:"value"
       }]);
       series.data.setAll(data);
     }
 
-    // Chart.js renderers
-    function renderRegionChart(data=[]) {
-      if (window.regionChart) regionChart.destroy();
-      regionChart = new Chart(
-        document.getElementById("region-chart"),
-        {
-          type: "bar",
-          data: {
-            labels: data.map(d => d.id),
-            datasets: [{ label: "Visits", data: data.map(d => d.value), backgroundColor: "#FBBF24" }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: { ticks: { color: "#a1a1aa" } },
-              y: { ticks: { color: "#a1a1aa" } }
-            }
-          }
+    // Chart.js charts
+    function renderRegionChart(data=[]){
+      if(window.regionChart) regionChart.destroy();
+      regionChart=new Chart(document.getElementById("isp-chart"),{
+        type:"bar",
+        data:{
+          labels:data.map(d=>d.id),
+          datasets:[{
+            label:"Visits",
+            data:data.map(d=>d.value),
+            backgroundColor:"#FBBF24"
+          }]
+        },
+        options:{
+          responsive:true,
+          scales:{x:{ticks:{color:"#a1a1aa"}},y:{ticks:{color:"#a1a1aa"}}}
         }
-      );
-    }
-
-    function renderIspChart(data=[]) {
-      if (window.ispChart) ispChart.destroy();
-      ispChart = new Chart(
-        document.getElementById("isp-chart"),
-        {
-          type: "bar",
-          data: {
-            labels: data.map(d => d.id),
-            datasets: [{ label: "Visits", data: data.map(d => d.value), backgroundColor: "#14B8A6" }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: { ticks: { color: "#a1a1aa" } },
-              y: { ticks: { color: "#a1a1aa" } }
-            }
-          }
-        }
-      );
-    }
-
-    function renderDateChart(data=[]) {
-      if (window.dateChart) dateChart.destroy();
-      dateChart = new Chart(
-        document.getElementById("date-chart"),
-        {
-          type: "line",
-          data: {
-            labels: data.map(d =>
-              new Date(d.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })
-            ),
-            datasets: [{
-              label: "Sessions",
-              data: data.map(d => d.count),
-              borderColor: "#4F46E5",
-              backgroundColor: "rgba(79,70,229,0.1)",
-              fill: true,
-              tension: 0.3
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: { ticks: { color: "#a1a1aa" } },
-              y: { ticks: { color: "#a1a1aa" } }
-            },
-            plugins: { legend: { display: false } }
-          }
-        }
-      );
-    }
-
-    function renderBreakdownCharts(deviceData=[], browserData=[]) {
-      if (window.deviceChart) deviceChart.destroy();
-      deviceChart = new Chart(
-        document.getElementById("device-chart"),
-        {
-          type: "pie",
-          data: {
-            labels: deviceData.map(d => d.device_type),
-            datasets: [{ data: deviceData.map(d => d.count), backgroundColor: ["#4F46E5","#7C3AED","#EC4899"] }]
-          },
-          options: {
-            responsive: true,
-            plugins: { legend: { position: "bottom", labels: { boxWidth: 12, color: "#a1a1aa" } } }
-          }
-        }
-      );
-      if (window.browserChart) browserChart.destroy();
-      browserChart = new Chart(
-        document.getElementById("browser-chart"),
-        {
-          type: "doughnut",
-          data: {
-            labels: browserData.map(d => d.browser),
-            datasets: [{ data: browserData.map(d => d.count), backgroundColor: ["#10B981","#F59E0B","#3B82F6","#D946EF","#EF4444"] }]
-          },
-          options: {
-            responsive: true,
-            plugins: { legend: { position: "bottom", labels: { boxWidth: 12, color: "#a1a1aa" } } }
-          }
-        }
-      );
-    }
-
-    // Populate IP datalist
-    function populateIpDatalist(ips=[]) {
-      const dl = document.getElementById("ip-list");
-      dl.innerHTML = "";
-      ips.forEach(ip => {
-        const opt = document.createElement("option");
-        opt.value = ip;
-        dl.appendChild(opt);
       });
     }
 
-    // Fetch & render all data
+    function renderIspChart(data=[]){
+      if(window.ispChart) ispChart.destroy();
+      ispChart=new Chart(document.getElementById("isp-chart"),{
+        type:"bar",
+        data:{
+          labels:data.map(d=>d.id),
+          datasets:[{
+            label:"Visits",
+            data:data.map(d=>d.value),
+            backgroundColor:"#14B8A6"
+          }]
+        },
+        options:{
+          responsive:true,
+          scales:{x:{ticks:{color:"#a1a1aa"}},y:{ticks:{color:"#a1a1aa"}}}
+        }
+      });
+    }
+
+    function renderDateChart(data=[]){
+      if(window.dateChart) dateChart.destroy();
+      dateChart=new Chart(document.getElementById("date-chart"),{
+        type:"line",
+        data:{
+          labels:data.map(d=>new Date(d.date).toLocaleDateString(undefined,{month:"short",day:"numeric"})),
+          datasets:[{
+            label:"Sessions",
+            data:data.map(d=>d.count),
+            borderColor:"#4F46E5",
+            backgroundColor:"rgba(79,70,229,0.1)",
+            fill:true,
+            tension:0.3
+          }]
+        },
+        options:{
+          responsive:true,
+          scales:{x:{ticks:{color:"#a1a1aa"}},y:{ticks:{color:"#a1a1aa"}}},
+          plugins:{legend:{display:false}}
+        }
+      });
+    }
+
+    function renderBreakdownCharts(deviceData=[],browserData=[]){
+      if(window.deviceChart) deviceChart.destroy();
+      deviceChart=new Chart(document.getElementById("device-chart"),{
+        type:"pie",
+        data:{
+          labels:deviceData.map(d=>d.device_type),
+          datasets:[{data:deviceData.map(d=>d.count),backgroundColor:["#4F46E5","#7C3AED","#EC4899"]}]
+        },
+        options:{
+          responsive:true,
+          plugins:{legend:{position:"bottom",labels:{boxWidth:12,color:"#a1a1aa"}}}
+        }
+      });
+
+      if(window.browserChart) browserChart.destroy();
+      browserChart=new Chart(document.getElementById("browser-chart"),{
+        type:"doughnut",
+        data:{
+          labels:browserData.map(d=>d.browser),
+          datasets:[{data:browserData.map(d=>d.count),backgroundColor:["#10B981","#F59E0B","#3B82F6","#D946EF","#EF4444"]}]
+        },
+        options:{
+          responsive:true,
+          plugins:{legend:{position:"bottom",labels:{boxWidth:12,color:"#a1a1aa"}}}
+        }
+      });
+    }
+
+    function populateIpDatalist(ips=[]){
+      const dl=document.getElementById("ip-list");
+      dl.innerHTML="";
+      ips.forEach(ip=>{const o=document.createElement("option");o.value=ip;dl.appendChild(o);});
+    }
+
+    // Fetch & render all
     let datePicker;
-    async function fetchAndRenderData() {
+    async function fetchAndRenderData(){
       document.getElementById('loader-overlay').classList.remove('hidden');
       try {
-        const params = new URLSearchParams({
-          ...(document.getElementById("country-filter").value && { country_filter: document.getElementById("country-filter").value }),
-          ...(document.getElementById("region-filter").value && { region_filter: document.getElementById("region-filter").value }),
-          ...(document.getElementById("isp-filter").value    && { isp_filter: document.getElementById("isp-filter").value }),
-          ...(document.getElementById("device-filter").value && { device_filter: document.getElementById("device-filter").value }),
-          ...(document.getElementById("browser-filter").value && { browser_filter: document.getElementById("browser-filter").value }),
-          ...(document.getElementById("url-filter").value    && { url_filter: document.getElementById("url-filter").value }),
-          ...(document.getElementById("ip-filter").value     && { ip_filter: document.getElementById("ip-filter").value }),
-          ...(document.getElementById("visitor-type-filter").value && { visitor_type_filter: document.getElementById("visitor-type-filter").value }),
-          ...(datePicker.getStartDate() && { start_date_filter: datePicker.getStartDate().toISOString() }),
-          ...(datePicker.getEndDate()   && { end_date_filter:   datePicker.getEndDate().toISOString() })
+        const params=new URLSearchParams({
+          ...(document.getElementById("country-filter").value&&{country_filter:document.getElementById("country-filter").value}),
+          ...(document.getElementById("isp-filter").value&&{isp_filter:document.getElementById("isp-filter").value}),
+          ...(document.getElementById("device-filter").value&&{device_filter:document.getElementById("device-filter").value}),
+          ...(document.getElementById("browser-filter").value&&{browser_filter:document.getElementById("browser-filter").value}),
+          ...(document.getElementById("url-filter").value&&{url_filter:document.getElementById("url-filter").value}),
+          ...(document.getElementById("ip-filter").value&&{ip_filter:document.getElementById("ip-filter").value}),
+          ...(document.getElementById("visitor-type-filter").value&&{visitor_type_filter:document.getElementById("visitor-type-filter").value}),
+          ...(datePicker.getStartDate()&&{start_date_filter:datePicker.getStartDate().toISOString()}),
+          ...(datePicker.getEndDate()&&{end_date_filter:datePicker.getEndDate().toISOString()})
         });
-        const res = await fetch(`/api/analytics?${params}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
+        const res=await fetch(`/api/analytics?${params}`);
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data=await res.json();
         renderStats(data.stats);
         renderMap(data.charts.by_country);
-        renderRegionChart(data.charts.by_region);
+        renderRegionChart(data.charts.by_isp);
         renderIspChart(data.charts.by_isp);
         renderDateChart(data.charts.by_date);
-        renderBreakdownCharts(data.charts.by_device, data.charts.by_browser);
+        renderBreakdownCharts(data.charts.by_device,data.charts.by_browser);
         renderVisitors(data.visitor_list);
-
-        populateSelectFilter("country-filter", data.meta.distinct_countries, "All Countries");
-        populateSelectFilter("region-filter",   data.meta.distinct_regions,  "All Regions");
-        populateSelectFilter("isp-filter",      data.meta.distinct_isps,     "All ISPs");
-        populateSelectFilter("device-filter",   data.meta.distinct_devices,  "All Devices");
-        populateSelectFilter("browser-filter",  data.meta.distinct_browsers, "All Browsers");
-        populateSelectFilter("url-filter",      data.meta.distinct_urls,     "All URLs");
+        populateSelectFilter("country-filter",data.meta.distinct_countries,"All Countries");
+        populateSelectFilter("isp-filter",data.meta.distinct_isps,"All ISPs");
+        populateSelectFilter("device-filter",data.meta.distinct_devices,"All Devices");
+        populateSelectFilter("browser-filter",data.meta.distinct_browsers,"All Browsers");
+        populateSelectFilter("url-filter",data.meta.distinct_urls,"All URLs");
         populateIpDatalist(data.meta.distinct_ips);
-
-      } catch (e) {
-        console.error("Load error:", e);
+      } catch(e) {
+        console.error("Load error:",e);
       } finally {
         document.getElementById('loader-overlay').classList.add('hidden');
       }
     }
 
-    // Reset filters
-    function resetFilters() {
-      document.querySelectorAll('select,input').forEach(el => el.value = '');
+    function resetFilters(){
+      document.querySelectorAll('select,input').forEach(el=>el.value='');
       populateVisitorTypeFilter();
       fetchAndRenderData();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded',()=>{
       populateVisitorTypeFilter();
-      datePicker = new Litepicker({
-        element: document.getElementById('date-filter'),
-        singleMode: false,
-        format: 'MMM D, YYYY'
+      datePicker=new Litepicker({
+        element:document.getElementById('date-filter'),
+        singleMode:false,
+        format:'MMM D, YYYY'
       });
-      document.getElementById('apply-filters-btn').onclick = fetchAndRenderData;
-      document.getElementById('reset-filters-btn').onclick = resetFilters;
+      document.getElementById('apply-filters-btn').onclick=fetchAndRenderData;
+      document.getElementById('reset-filters-btn').onclick=resetFilters;
       fetchAndRenderData();
     });
   </script>
