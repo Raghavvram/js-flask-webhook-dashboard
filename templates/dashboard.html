@@ -953,23 +953,35 @@
             }
 
             tbody.innerHTML = visitors.map(visitor => {
-                const createdAt = new Date(visitor.created_at).toLocaleString();
+                const createdAt = new Date(visitor.created_at);
                 const timeSpent = visitor.time_spent_seconds ? `${visitor.time_spent_seconds}s` : '-';
                 const pageUrl = visitor.page_visited?.length > 40 ? `${visitor.page_visited.substring(0, 40)}...` : (visitor.page_visited || '-');
                 const location = [visitor.city, visitor.country].filter(Boolean).join(', ') || '-';
                 
+                // --- FIX STARTS HERE ---
+                const now = new Date();
+                const minutesSinceCreation = (now - createdAt) / 1000 / 60;
+                const SESSION_TIMEOUT_MINUTES = 5; 
+
                 let status, statusClass;
-                if (visitor.time_spent_seconds === null || typeof visitor.time_spent_seconds === 'undefined') {
+
+                const hasTimeSpent = visitor.time_spent_seconds !== null && typeof visitor.time_spent_seconds !== 'undefined';
+
+                if (hasTimeSpent) {
+                    status = visitor.time_spent_seconds > 30 ? 'Engaged' : 'Brief';
+                    statusClass = 'status-idle';
+                } else if (minutesSinceCreation < SESSION_TIMEOUT_MINUTES) {
                     status = 'Active';
                     statusClass = 'status-active';
                 } else {
-                    status = visitor.time_spent_seconds > 30 ? 'Engaged' : 'Brief';
+                    status = 'Ended';
                     statusClass = 'status-idle';
                 }
+                // --- FIX ENDS HERE ---
 
                 return `
                     <tr>
-                        <td>${createdAt}</td>
+                        <td>${createdAt.toLocaleString()}</td>
                         <td>${location}</td>
                         <td>${visitor.device_type || '-'}</td>
                         <td>${visitor.browser || '-'}</td>
