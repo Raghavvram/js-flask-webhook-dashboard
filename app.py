@@ -8,6 +8,7 @@ from user_agents import parse
 import pycountry
 
 load_dotenv()
+
 app = Flask(__name__, template_folder='templates')
 CORS(app)
 
@@ -16,15 +17,15 @@ supabase_key = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(supabase_url, supabase_key)
 
 def get_country_code(country_name):
-    if not country_name or country_name == 'unknown':
+    if not country_name or country_name.lower() == 'unknown':
         return None
     try:
         country = pycountry.countries.get(name=country_name)
         if country:
             return country.alpha_2
-        country = pycountry.countries.search_fuzzy(country_name)
-        if country:
-            return country[0].alpha_2
+        fuzzy = pycountry.countries.search_fuzzy(country_name)
+        if fuzzy:
+            return fuzzy[0].alpha_2
     except Exception:
         return None
     return None
@@ -37,28 +38,35 @@ def dashboard():
 def get_analytics():
     try:
         params = {
-            'country_filter':       request.args.get('country_filter') or None,
-            'start_date_filter':    request.args.get('start_date_filter') or None,
-            'end_date_filter':      request.args.get('end_date_filter') or None,
-            'visitor_type_filter':  request.args.get('visitor_type_filter') or None,
-            'device_filter':        request.args.get('device_filter') or None,
-            'url_filter':           request.args.get('url_filter') or None,
-            'browser_filter':       request.args.get('browser_filter') or None,
-            'ip_filter':            request.args.get('ip_filter') or None,
-            'region_filter':        request.args.get('region_filter') or None,
-            'isp_filter':           request.args.get('isp_filter') or None,
+            'country_filter':       request.args.get('country_filter'),
+            'start_date_filter':    request.args.get('start_date_filter'),
+            'end_date_filter':      request.args.get('end_date_filter'),
+            'visitor_type_filter':  request.args.get('visitor_type_filter'),
+            'device_filter':        request.args.get('device_filter'),
+            'url_filter':           request.args.get('url_filter'),
+            'browser_filter':       request.args.get('browser_filter'),
+            'ip_filter':            request.args.get('ip_filter'),
+            'region_filter':        request.args.get('region_filter'),
+            'isp_filter':           request.args.get('isp_filter'),
         }
+        # Convert empty strings to NULLs
+        for k, v in params.items():
+            if not v:
+                params[k] = None
+
         response = supabase.rpc('get_filtered_analytics_visual', params).execute()
         data = response.data or {}
+
         if 'stats' in data:
             stats = data['stats']
             total = stats.get('total_visitors', 0)
             unique = stats.get('unique_visitors', 0)
             stats['repeated_visitors'] = max(0, total - unique)
             data['stats'] = stats
+
         return jsonify(data)
     except Exception as e:
-        app.logger.error(f"AN ERROR OCCURRED IN /api/analytics: {e}", exc_info=True)
+        app.logger.error(f"AN ERROR IN /api/analytics: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/track', methods=['POST'])
@@ -78,17 +86,14 @@ def track():
         else:
             device_type = "Desktop"
 
-        country = data.get("country")
-        country = None if country == 'unknown' else country
-        city = data.get("city")
-        city = None if city == 'unknown' else city
-        region = data.get("region")
-        region = None if region == 'unknown' else region
-        isp = data.get("isp")
-        isp = None if isp == 'unknown' else isp
-        public_ip = data.get("publicIp")
-        public_ip = None if public_ip == 'unknown' else public_ip
+        def normalize(val):
+            return None if not val or val.lower() == 'unknown' else val
 
+        country = normalize(data.get("country"))
+        city    = normalize(data.get("city"))
+        region  = normalize(data.get("region"))
+        isp     = normalize(data.get("isp"))
+        public_ip = normalize(data.get("publicIp"))
         country_code = data.get("countryCode") or get_country_code(country)
         first_seen = data.get("timestamp")
 
@@ -107,6 +112,7 @@ def track():
             "operating_system": ua.os.family,
             "first_seen":       first_seen
         }
+        # Remove None values
         visitor_record = {k: v for k, v in visitor_record.items() if v is not None}
 
         supabase.table('visitors') \
@@ -114,8 +120,9 @@ def track():
             .execute()
 
         return jsonify({"success": True}), 201
+
     except Exception as e:
-        app.logger.error(f"AN ERROR OCCURRED IN /track: {e}", exc_info=True)
+        app.logger.error(f"AN ERROR IN /track: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/log/time', methods=['POST'])
@@ -127,18 +134,16 @@ def log_time():
         if not session_id or time_spent is None:
             return jsonify({"error": "Missing sessionId or timeSpentSeconds"}), 400
 
-        time_spent = max(0, min(time_spent, 86400))
-
+        # Clamp between 0 and 86400
+        time_spent = max(0, min(int(time_spent), 86400))
         supabase.table('visitors') \
             .update({'time_spent_seconds': time_spent}) \
             .eq('session_id', session_id) \
             .execute()
 
         return jsonify({"success": True}), 200
-    except Exception as e:
-        app.logger.error(f"AN ERROR OCCURRED IN /log/time: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    except Exception as e:
+        app.logger.error(f"AN ERROR IN /log/time: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
