@@ -46,10 +46,8 @@ def get_analytics():
             'url_filter':           request.args.get('url_filter'),
             'browser_filter':       request.args.get('browser_filter'),
             'ip_filter':            request.args.get('ip_filter'),
-            'region_filter':        request.args.get('region_filter'),
             'isp_filter':           request.args.get('isp_filter'),
         }
-        # Convert empty strings to NULLs
         for k, v in params.items():
             if not v:
                 params[k] = None
@@ -66,7 +64,7 @@ def get_analytics():
 
         return jsonify(data)
     except Exception as e:
-        app.logger.error(f"AN ERROR IN /api/analytics: {e}", exc_info=True)
+        app.logger.error(f"Error in /api/analytics: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/track', methods=['POST'])
@@ -77,6 +75,9 @@ def track():
         if not session_id:
             return jsonify({"error": "Missing sessionId"}), 400
 
+        def norm(val):
+            return None if not val or str(val).lower() == 'unknown' else val
+
         ua_string = data.get("userAgent", "")
         ua = parse(ua_string)
         if ua.is_mobile:
@@ -86,33 +87,34 @@ def track():
         else:
             device_type = "Desktop"
 
-        def normalize(val):
-            return None if not val or val.lower() == 'unknown' else val
-
-        country = normalize(data.get("country"))
-        city    = normalize(data.get("city"))
-        region  = normalize(data.get("region"))
-        isp     = normalize(data.get("isp"))
-        public_ip = normalize(data.get("publicIp"))
+        country      = norm(data.get("country"))
+        city         = norm(data.get("city"))
+        isp          = norm(data.get("isp"))
+        public_ip    = norm(data.get("publicIp"))
         country_code = data.get("countryCode") or get_country_code(country)
-        first_seen = data.get("timestamp")
+        first_seen   = data.get("timestamp")
 
         visitor_record = {
-            "session_id":       session_id,
-            "public_ip":        public_ip,
-            "country":          country,
-            "country_code":     country_code,
-            "region":           region,
-            "city":             city,
-            "isp":              isp,
-            "page_visited":     data.get("pageVisited"),
-            "user_agent":       ua_string,
-            "device_type":      device_type,
-            "browser":          ua.browser.family,
-            "operating_system": ua.os.family,
-            "first_seen":       first_seen
+            "session_id":        session_id,
+            "public_ip":         public_ip,
+            "country":           country,
+            "country_code":      country_code,
+            "city":              city,
+            "isp":               isp,
+            "page_visited":      data.get("pageVisited"),
+            "user_agent":        ua_string,
+            "device_type":       device_type,
+            "browser":           ua.browser.family,
+            "operating_system":  ua.os.family,
+            "first_seen":        first_seen,
+            "time_spent_seconds": None,
         }
-        # Remove None values
+
+        if data.get("timeSpentSeconds") is not None:
+            ts = int(data.get("timeSpentSeconds") or 0)
+            ts = max(0, min(ts, 86400))
+            visitor_record["time_spent_seconds"] = ts
+
         visitor_record = {k: v for k, v in visitor_record.items() if v is not None}
 
         supabase.table('visitors') \
@@ -120,30 +122,7 @@ def track():
             .execute()
 
         return jsonify({"success": True}), 201
-
     except Exception as e:
-        app.logger.error(f"AN ERROR IN /track: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/log/time', methods=['POST'])
-def log_time():
-    try:
-        data = request.get_json(force=True)
-        session_id = data.get('sessionId')
-        time_spent = data.get('timeSpentSeconds')
-        if not session_id or time_spent is None:
-            return jsonify({"error": "Missing sessionId or timeSpentSeconds"}), 400
-
-        # Clamp between 0 and 86400
-        time_spent = max(0, min(int(time_spent), 86400))
-        supabase.table('visitors') \
-            .update({'time_spent_seconds': time_spent}) \
-            .eq('session_id', session_id) \
-            .execute()
-
-        return jsonify({"success": True}), 200
-
-    except Exception as e:
-        app.logger.error(f"AN ERROR IN /log/time: {e}", exc_info=True)
+        app.logger.error(f"Error in /track: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
