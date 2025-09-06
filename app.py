@@ -8,7 +8,6 @@ from user_agents import parse
 import pycountry
 
 load_dotenv()
-
 app = Flask(__name__, template_folder='templates')
 CORS(app)
 
@@ -37,7 +36,6 @@ def dashboard():
 @app.route('/api/analytics', methods=['GET'])
 def get_analytics():
     try:
-        # Include region_filter and isp_filter here as well
         params = {
             'country_filter':       request.args.get('country_filter') or None,
             'start_date_filter':    request.args.get('start_date_filter') or None,
@@ -63,8 +61,6 @@ def get_analytics():
         app.logger.error(f"AN ERROR OCCURRED IN /api/analytics: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-
-
 @app.route('/track', methods=['POST'])
 def track():
     try:
@@ -83,40 +79,34 @@ def track():
             device_type = "Desktop"
 
         country = data.get("country")
-        if country == 'unknown':
-            country = None
+        country = None if country == 'unknown' else country
         city = data.get("city")
-        if city == 'unknown':
-            city = None
+        city = None if city == 'unknown' else city
         region = data.get("region")
-        if region == 'unknown':
-            region = None
+        region = None if region == 'unknown' else region
         isp = data.get("isp")
-        if isp == 'unknown':
-            isp = None
+        isp = None if isp == 'unknown' else isp
         public_ip = data.get("publicIp")
-        if public_ip == 'unknown':
-            public_ip = None
+        public_ip = None if public_ip == 'unknown' else public_ip
 
         country_code = data.get("countryCode") or get_country_code(country)
-        first_seen = data.get("timestamp")  # JavaScript timestamp
+        first_seen = data.get("timestamp")
 
         visitor_record = {
-            "session_id": session_id,
-            "public_ip": public_ip,
-            "country": country,
-            "country_code": country_code,
-            "region": region,
-            "city": city,
-            "isp": isp,
-            "page_visited": data.get("pageVisited"),
-            "user_agent": ua_string,
-            "device_type": device_type,
-            "browser": ua.browser.family,
+            "session_id":       session_id,
+            "public_ip":        public_ip,
+            "country":          country,
+            "country_code":     country_code,
+            "region":           region,
+            "city":             city,
+            "isp":              isp,
+            "page_visited":     data.get("pageVisited"),
+            "user_agent":       ua_string,
+            "device_type":      device_type,
+            "browser":          ua.browser.family,
             "operating_system": ua.os.family,
-            "first_seen": first_seen
+            "first_seen":       first_seen
         }
-        # Remove None values
         visitor_record = {k: v for k, v in visitor_record.items() if v is not None}
 
         supabase.table('visitors') \
@@ -137,11 +127,7 @@ def log_time():
         if not session_id or time_spent is None:
             return jsonify({"error": "Missing sessionId or timeSpentSeconds"}), 400
 
-        # Validate time_spent
-        if time_spent < 0:
-            time_spent = 0
-        elif time_spent > 86400:
-            time_spent = 86400
+        time_spent = max(0, min(time_spent, 86400))
 
         supabase.table('visitors') \
             .update({'time_spent_seconds': time_spent}) \

@@ -1,3 +1,4 @@
+<!-- templates/dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,216 +15,201 @@
   <style>
     #chartdiv { width: 100%; height: 500px; }
     .loader { border-top-color: #4f46e5; animation: spinner 1.5s linear infinite; }
-    @keyframes spinner {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .visits-container { overflow: hidden; max-height: 1000px; transition: max-height 0.4s ease-in-out; }
+    @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .visits-container { overflow: hidden; max-height: 1000px; transition: max-height 0.4s; }
     .visits-container.collapsed { max-height: 0; }
   </style>
 </head>
-<body class="bg-gray-900 text-gray-200 font-sans">
-  <div id="loader-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-80 z-50 flex justify-center items-center hidden">
-    <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
+<body class="bg-gray-900 text-gray-200">
+  <div id="loader-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-80 flex items-center justify-center hidden">
+    <div class="loader rounded-full border-8 border-t-8 border-gray-200 h-32 w-32"></div>
   </div>
 
-  <div class="container mx-auto px-4 py-8">
-    <h1 class="text-4xl font-bold text-center text-gray-100 mb-8">Analytics Dashboard</h1>
+  <div class="container mx-auto p-8">
+    <h1 class="text-4xl font-bold text-center mb-8">Analytics Dashboard</h1>
 
-    <div class="bg-gray-800 border border-gray-700 p-4 rounded-lg shadow-md mb-8 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-4">
-      <div class="col-span-2 sm:col-span-1 md:col-span-2 lg:col-span-2">
-        <label class="text-sm font-medium text-gray-400">Date Range</label>
-        <input id="date-filter" type="text" placeholder="All Time" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700" />
+    <!-- Filters -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-10 gap-4 bg-gray-800 p-4 rounded shadow mb-8">
+      <!-- Date Range -->
+      <div class="col-span-2 sm:col-span-1">
+        <label class="block text-gray-400">Date Range</label>
+        <input id="date-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded" placeholder="All Time" />
       </div>
+      <!-- Visitor Type -->
       <div>
-        <label class="text-sm font-medium text-gray-400">Visitor Type</label>
-        <select id="visitor-type-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700"></select>
+        <label class="block text-gray-400">Visitor Type</label>
+        <select id="visitor-type-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded"></select>
       </div>
+      <!-- Country -->
       <div>
-        <label class="text-sm font-medium text-gray-400">Country</label>
-        <select id="country-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700">
+        <label class="block text-gray-400">Country</label>
+        <select id="country-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded">
           <option value="">All</option>
         </select>
       </div>
+      <!-- Region -->
       <div>
-        <label class="text-sm font-medium text-gray-400">Region</label>
-        <select id="region-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700">
+        <label class="block text-gray-400">Region</label>
+        <select id="region-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded">
           <option value="">All</option>
         </select>
       </div>
+      <!-- ISP -->
       <div>
-        <label class="text-sm font-medium text-gray-400">ISP</label>
-        <select id="isp-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700">
+        <label class="block text-gray-400">ISP</label>
+        <select id="isp-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded">
           <option value="">All</option>
         </select>
       </div>
+      <!-- Device -->
       <div>
-        <label class="text-sm font-medium text-gray-400">Device</label>
-        <select id="device-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700">
+        <label class="block text-gray-400">Device</label>
+        <select id="device-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded">
           <option value="">All</option>
         </select>
       </div>
+      <!-- Browser -->
       <div>
-        <label class="text-sm font-medium text-gray-400">Browser</label>
-        <select id="browser-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700">
+        <label class="block text-gray-400">Browser</label>
+        <select id="browser-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded">
           <option value="">All</option>
         </select>
       </div>
+      <!-- URL -->
       <div>
-        <label class="text-sm font-medium text-gray-400">URL</label>
-        <select id="url-filter" class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700">
+        <label class="block text-gray-400">URL</label>
+        <select id="url-filter" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded">
           <option value="">All</option>
         </select>
       </div>
-      <div class="flex flex-col">
-        <label class="text-sm font-medium text-gray-400">IP Address</label>
-        <input id="ip-filter" list="ip-list" type="text" placeholder="Filter by IP..." class="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-700" />
+      <!-- IP -->
+      <div>
+        <label class="block text-gray-400">IP Address</label>
+        <input id="ip-filter" list="ip-list" class="mt-1 w-full p-2 bg-gray-700 border border-gray-600 rounded" placeholder="Filter by IP..." />
       </div>
+      <!-- Reset -->
       <div class="flex items-end">
-        <button id="reset-filters-btn" class="w-full bg-gray-600 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-700">Reset</button>
+        <button id="reset-filters-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded">Reset</button>
       </div>
+      <!-- Apply -->
       <div class="col-span-2 flex justify-end">
-        <button id="apply-filters-btn" class="w-full md:w-auto bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700">Apply Filters</button>
+        <button id="apply-filters-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded">Apply Filters</button>
       </div>
       <datalist id="ip-list"></datalist>
     </div>
 
+    <!-- Stats -->
     <div id="stats-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"></div>
 
+    <!-- Charts -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-      <div class="lg:col-span-2 flex flex-col gap-8">
-        <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md">
-          <h3 class="font-semibold mb-4 text-gray-100">Visitors by Country</h3>
+      <div class="lg:col-span-2 space-y-8">
+        <div class="bg-gray-800 p-6 rounded shadow">
+          <h3 class="text-xl font-semibold mb-4">Visitors by Country</h3>
           <div id="chartdiv"></div>
         </div>
-        <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md">
-          <h3 class="font-semibold mb-4 text-gray-100">Visitors by Region</h3>
+        <div class="bg-gray-800 p-6 rounded shadow">
+          <h3 class="text-xl font-semibold mb-4">Visitors by Region</h3>
           <canvas id="region-chart"></canvas>
         </div>
       </div>
-      <div class="flex flex-col gap-8">
-        <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md">
-          <h3 class="font-semibold mb-4 text-gray-100">Visitors by ISP</h3>
+      <div class="space-y-8">
+        <div class="bg-gray-800 p-6 rounded shadow">
+          <h3 class="text-xl font-semibold mb-4">Visitors by ISP</h3>
           <canvas id="isp-chart"></canvas>
         </div>
-        <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md">
-          <h3 class="font-semibold mb-4 text-gray-100">Visitors by Date</h3>
+        <div class="bg-gray-800 p-6 rounded shadow">
+          <h3 class="text-xl font-semibold mb-4">Visitors by Date</h3>
           <canvas id="date-chart"></canvas>
         </div>
-        <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md">
-          <h3 class="font-semibold mb-4 text-gray-100">Visitors by Device</h3>
+        <div class="bg-gray-800 p-6 rounded shadow">
+          <h3 class="text-xl font-semibold mb-4">Visitors by Device</h3>
           <canvas id="device-chart"></canvas>
         </div>
-        <div class="bg-gray-800 border border-gray-700 p-6 rounded-lg shadow-md">
-          <h3 class="font-semibold mb-4 text-gray-100">Top Browsers</h3>
+        <div class="bg-gray-800 p-6 rounded shadow">
+          <h3 class="text-xl font-semibold mb-4">Top Browsers</h3>
           <canvas id="browser-chart"></canvas>
         </div>
       </div>
     </div>
 
-    <div class="bg-gray-800 border border-gray-700 rounded-lg shadow-md">
+    <!-- Recent Visitors -->
+    <div class="bg-gray-800 rounded shadow">
       <div class="p-4 border-b border-gray-700">
-        <h3 class="text-lg font-semibold text-gray-100">Recent Visitors</h3>
+        <h3 class="text-xl font-semibold">Recent Visitors</h3>
       </div>
       <div id="visitors-container" class="p-4 space-y-3"></div>
     </div>
   </div>
 
   <script>
-    // Helper: format seconds into human-readable string
-    function formatDuration(seconds) {
-      if (seconds === null || isNaN(seconds) || seconds < 0) return "N/A";
-      if (seconds < 60) return `${Math.round(seconds)}s`;
-      const mins = Math.floor(seconds / 60);
-      const rem = Math.round(seconds % 60);
-      return `${mins}m ${rem}s`;
+    // Utility to format seconds
+    function formatDuration(s) {
+      if (!s || isNaN(s) || s < 0) return "N/A";
+      if (s < 60) return `${Math.round(s)}s`;
+      const m = Math.floor(s/60), r = Math.round(s%60);
+      return `${m}m ${r}s`;
     }
 
-    // Render stats summary
-    function renderStats(stats = {}) {
-      const total = stats.total_visitors || 0;
-      const unique = stats.unique_visitors || 0;
-      const repeated = (stats.total_visitors || 0) - (stats.unique_visitors || 0);
-      const avg = stats.avg_time_on_page || 0;
+    // Render stats cards
+    function renderStats(stats={}) {
+      const t=stats.total_visitors||0, u=stats.unique_visitors||0;
+      const r=Math.max(0,t-u), a=stats.avg_time_on_page||0;
       document.getElementById("stats-grid").innerHTML = `
-        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-          <h3 class="text-sm font-medium text-gray-400">Total Visits</h3>
-          <p class="text-3xl font-bold mt-2">${total}</p>
-        </div>
-        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-          <h3 class="text-sm font-medium text-gray-400">Unique Visitors</h3>
-          <p class="text-3xl font-bold mt-2">${unique}</p>
-        </div>
-        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-          <h3 class="text-sm font-medium text-gray-400">Repeated Visitors</h3>
-          <p class="text-3xl font-bold mt-2">${repeated > 0 ? repeated : 0}</p>
-        </div>
-        <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-          <h3 class="text-sm font-medium text-gray-400">Avg. Time on Page</h3>
-          <p class="text-3xl font-bold mt-2">${formatDuration(avg)}</p>
-        </div>`;
+        <div class="bg-gray-800 p-6 rounded border"><h4 class="text-gray-400">Total Visits</h4><p class="text-3xl font-bold">${t}</p></div>
+        <div class="bg-gray-800 p-6 rounded border"><h4 class="text-gray-400">Unique Visitors</h4><p class="text-3xl font-bold">${u}</p></div>
+        <div class="bg-gray-800 p-6 rounded border"><h4 class="text-gray-400">Repeated Visitors</h4><p class="text-3xl font-bold">${r}</p></div>
+        <div class="bg-gray-800 p-6 rounded border"><h4 class="text-gray-400">Avg. Time on Page</h4><p class="text-3xl font-bold">${formatDuration(a)}</p></div>`;
     }
 
-    // Populate visitor type filter dropdown
-    function populateVisitorTypeFilter() {
-      const select = document.getElementById("visitor-type-filter");
-      select.innerHTML = `
+    // Populate visitor type
+    function populateVisitorTypeFilter(){
+      document.getElementById("visitor-type-filter").innerHTML = `
         <option value="all">All Visitors</option>
         <option value="unique">Unique</option>
         <option value="repeated">Repeated</option>`;
     }
 
-    // Generic function to populate select filters
-    function populateSelectFilter(id, options, label) {
+    // Populate generic select
+    function populateSelectFilter(id, opts, label){
       const sel = document.getElementById(id);
       sel.innerHTML = `<option value="">${label}</option>`;
-      (options || []).sort().forEach(o => {
-        const opt = document.createElement("option");
-        opt.value = o; opt.textContent = o;
-        sel.appendChild(opt);
+      (opts||[]).sort().forEach(o=>{
+        const opt=document.createElement("option");
+        opt.value=o; opt.textContent=o; sel.appendChild(opt);
       });
     }
 
-    // Create HTML for a single visitor entry
-    function createSingleVisitHTML(visitor) {
+    // Create visitor row
+    function createSingleVisitHTML(v){
       return `
-        <div class="grid grid-cols-2 md:grid-cols-[1.5fr_1.5fr_2fr_1fr_2fr] gap-x-4 gap-y-2 items-center px-3 py-2 border-t border-gray-700/50 text-sm">
-          <div><p class="text-gray-300 font-medium">${visitor.country || 'Unknown'}, ${visitor.city || 'N/A'}</p></div>
-          <div>
-            <p class="text-gray-300">${visitor.device_type || 'N/A'}</p>
-            <p class="text-gray-400 text-xs">${visitor.browser || 'N/A'} on ${visitor.operating_system || 'N/A'}</p>
-          </div>
-          <div><p class="text-gray-300 break-all" title="${visitor.page_visited || ''}">${visitor.page_visited || 'N/A'}</p></div>
-          <div class="text-center"><span class="font-semibold text-gray-200">${formatDuration(visitor.time_spent_seconds)}</span></div>
-          <div class="text-right"><p class="text-gray-300">${new Date(visitor.created_at).toLocaleString()}</p></div>
+        <div class="grid grid-cols-2 md:grid-cols-[1.5fr_1.5fr_2fr_1fr_2fr] gap-2 border-t py-2 text-sm">
+          <div>${v.country||'Unknown'}, ${v.city||'N/A'}</div>
+          <div>${v.device_type||'N/A'}<br/><span class="text-xs text-gray-400">${v.browser||''} on ${v.operating_system||''}</span></div>
+          <div class="break-all">${v.page_visited||''}</div>
+          <div class="text-center">${formatDuration(v.time_spent_seconds)}</div>
+          <div class="text-right">${new Date(v.created_at).toLocaleString()}</div>
         </div>`;
     }
 
-    // Render all visitors grouped by IP
-    function renderVisitors(visitors = []) {
-      const container = document.getElementById("visitors-container");
-      if (!visitors.length) {
-        container.innerHTML = `<p class="text-gray-500 text-center py-8">No visitor data.</p>`;
-        return;
-      }
-      const groups = visitors.reduce((acc, visitor) => {
-        const ip = visitor.public_ip || 'Unknown IP';
-        (acc[ip] || (acc[ip] = [])).push(visitor);
-        return acc;
-      }, {});
-      container.innerHTML = Object.entries(groups).map(([ip, visits]) => {
-        const rows = visits.map(createSingleVisitHTML).join("");
-        const collapsed = visits.length > 1 ? "collapsed" : "";
-        const rot = collapsed ? "-rotate-90" : "";
+    // Render visitors by IP
+    function renderVisitors(visitors=[]){
+      const cont=document.getElementById("visitors-container");
+      if(!visitors.length){cont.innerHTML='<p class="text-gray-500 text-center py-8">No data.</p>'; return;}
+      const groups=visitors.reduce((a,v)=>{
+        const ip=v.public_ip||'Unknown IP';
+        (a[ip]|| (a[ip]=[])).push(v); return a;
+      },{});
+      cont.innerHTML=Object.entries(groups).map(([ip,vs])=>{
+        const rows=vs.map(createSingleVisitHTML).join("");
+        const collapsed=vs.length>1?"collapsed":"";
+        const rot=collapsed?"-rotate-90":"";
         return `
-          <div class="bg-gray-800/50 rounded-lg border border-gray-700/50">
-            <div class="group-header p-3 cursor-pointer flex justify-between items-center hover:bg-gray-700/50">
-              <div>
-                <span class="font-mono text-indigo-400">${ip}</span>
-                <span class="ml-4 px-2 py-1 bg-gray-600 text-gray-200 text-xs rounded-full">${visits.length} ${visits.length > 1 ? "visits" : "visit"}</span>
-              </div>
-              <svg class="chevron-icon w-5 h-5 text-gray-400 transition-transform transform ${rot}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          <div class="bg-gray-800 rounded border">
+            <div class="p-3 flex justify-between cursor-pointer hover:bg-gray-700" onclick="this.nextElementSibling.classList.toggle('collapsed'); this.querySelector('.chevron-icon').classList.toggle('-rotate-90');">
+              <div><code class="text-indigo-400">${ip}</code> <span class="bg-gray-600 text-xs rounded px-2">${vs.length} visit${vs.length>1?'s':''}</span></div>
+              <svg class="chevron-icon w-5 h-5 text-gray-400 transform ${rot}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
               </svg>
             </div>
             <div class="visits-container ${collapsed}">${rows}</div>
@@ -231,230 +217,132 @@
       }).join("");
     }
 
-    // Render country heatmap via amCharts
-    function renderMap(countryData = []) {
-      if (window.mapRoot) window.mapRoot.dispose();
-      window.mapRoot = am5.Root.new("chartdiv");
-      window.mapRoot.setThemes([am5themes_Animated.new(window.mapRoot)]);
-      const chart = window.mapRoot.container.children.push(am5map.MapChart.new(window.mapRoot, {
-        panX: "rotateX",
-        projection: am5map.geoMercator()
+    // Render map (amCharts)
+    function renderMap(data=[]){
+      if(window.mapRoot) mapRoot.dispose();
+      mapRoot=am5.Root.new("chartdiv");
+      mapRoot.setThemes([am5themes_Animated.new(mapRoot)]);
+      const chart=mapRoot.container.children.push(am5map.MapChart.new(mapRoot,{projection:am5map.geoMercator()}));
+      const series=chart.series.push(am5map.MapPolygonSeries.new(mapRoot,{
+        geoJSON:am5geodata_worldLow,
+        exclude:["AQ"],
+        valueField:"value"
       }));
-      const polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(window.mapRoot, {
-        geoJSON: am5geodata_worldLow,
-        exclude: ["AQ"],
-        valueField: "value"
-      }));
-      polygonSeries.mapPolygons.template.setAll({
-        tooltipText: "{name}: {value}",
-        interactive: true,
-        fill: am5.color(0x4a5568)
-      });
-      polygonSeries.mapPolygons.template.states.create("hover", {
-        fill: am5.color(0x4f46e5)
-      });
-      polygonSeries.set("heatRules", [{
-        target: polygonSeries.mapPolygons.template,
-        key: "fill",
-        min: am5.color(0x4a5568),
-        max: am5.color(0x6366f1),
-        dataField: "value"
+      series.mapPolygons.template.setAll({tooltipText:"{name}: {value}",interactive:true,fill:am5.color(0x4a5568)});
+      series.mapPolygons.template.states.create("hover",{fill:am5.color(0x4f46e5)});
+      series.set("heatRules",[{
+        target:series.mapPolygons.template,
+        key:"fill",
+        min:am5.color(0x4a5568),
+        max:am5.color(0x6366f1),
+        dataField:"value"
       }]);
-      polygonSeries.data.setAll(countryData);
+      series.data.setAll(data);
     }
 
-    // Render “By Region” bar chart
-    function renderRegionChart(regionData = []) {
-      if (window.regionChart) window.regionChart.destroy();
-      window.regionChart = new Chart(document.getElementById("region-chart"), {
-        type: "bar",
-        data: {
-          labels: regionData.map(r => r.id),
-          datasets: [{
-            label: "Visits",
-            data: regionData.map(r => r.value),
-            backgroundColor: "#FBBF24"
-          }]
+    // Render charts with Chart.js
+    function renderRegionChart(data=[]){
+      if(window.regionChart) regionChart.destroy();
+      regionChart=new Chart(document.getElementById("region-chart"),{
+        type:"bar",
+        data:{labels:data.map(d=>d.id),datasets:[{label:"Visits",data:data.map(d=>d.value),backgroundColor:"#FBBF24"}]},
+        options:{responsive:true,scales:{x:{ticks:{color:"#a1a1aa"}},y:{ticks:{color:"#a1a1aa"}}}}
+      });
+    }
+    function renderIspChart(data=[]){
+      if(window.ispChart) ispChart.destroy();
+      ispChart=new Chart(document.getElementById("isp-chart"),{
+        type:"bar",
+        data:{labels:data.map(d=>d.id),datasets:[{label:"Visits",data:data.map(d=>d.value),backgroundColor:"#14B8A6"}]},
+        options:{responsive:true,scales:{x:{ticks:{color:"#a1a1aa"}},y:{ticks:{color:"#a1a1aa"}}}}
+      });
+    }
+    function renderDateChart(data=[]){
+      if(window.dateChart) dateChart.destroy();
+      dateChart=new Chart(document.getElementById("date-chart"),{
+        type:"line",
+        data:{
+          labels:data.map(d=>new Date(d.date).toLocaleDateString(undefined,{month:"short",day:"numeric"})),
+          datasets:[{label:"Sessions",data:data.map(d=>d.count),borderColor:"#4F46E5",backgroundColor:"rgba(79,70,229,0.1)",fill:true,tension:0.3}]
         },
-        options: { responsive: true, scales: { x: { ticks: { color: "#a1a1aa" } }, y: { ticks: { color: "#a1a1aa" } } } }
+        options:{responsive:true,scales:{x:{ticks:{color:"#a1a1aa"}},y:{ticks:{color:"#a1a1aa"}}},plugins:{legend:{display:false}}}
+      });
+    }
+    function renderBreakdownCharts(deviceData=[],browserData=[]){
+      if(window.deviceChart) deviceChart.destroy();
+      deviceChart=new Chart(document.getElementById("device-chart"),{
+        type:"pie",
+        data:{labels:deviceData.map(d=>d.device_type),datasets:[{data:deviceData.map(d=>d.count),backgroundColor:["#4F46E5","#7C3AED","#EC4899"]}]},
+        options:{responsive:true,plugins:{legend:{position:"bottom",labels:{boxWidth:12,color:"#a1a1aa"}}}}
+      });
+      if(window.browserChart) browserChart.destroy();
+      browserChart=new Chart(document.getElementById("browser-chart"),{
+        type:"doughnut",
+        data:{labels:browserData.map(d=>d.browser),datasets:[{data:browserData.map(d=>d.count),backgroundColor:["#10B981","#F59E0B","#3B82F6","#D946EF","#EF4444"]}]},
+        options:{responsive:true,plugins:{legend:{position:"bottom",labels:{boxWidth:12,color:"#a1a1aa"}}}}
       });
     }
 
-    // Render “By ISP” bar chart
-    function renderIspChart(ispData = []) {
-      if (window.ispChart) window.ispChart.destroy();
-      window.ispChart = new Chart(document.getElementById("isp-chart"), {
-        type: "bar",
-        data: {
-          labels: ispData.map(i => i.id),
-          datasets: [{
-            label: "Visits",
-            data: ispData.map(i => i.value),
-            backgroundColor: "#14B8A6"
-          }]
-        },
-        options: { responsive: true, scales: { x: { ticks: { color: "#a1a1aa" } }, y: { ticks: { color: "#a1a1aa" } } } }
-      });
+    // Populate IP datalist
+    function populateIpDatalist(ips=[]){
+      const dl=document.getElementById("ip-list");
+      dl.innerHTML="";
+      ips.forEach(ip=>{const o=document.createElement("option");o.value=ip;dl.appendChild(o);});
     }
 
-    // Render visits over time line chart
-    function renderDateChart(dateData = []) {
-      if (window.dateChart) window.dateChart.destroy();
-      window.dateChart = new Chart(document.getElementById("date-chart"), {
-        type: "line",
-        data: {
-          labels: dateData.map(d => new Date(d.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })),
-          datasets: [{
-            label: "Sessions",
-            data: dateData.map(d => d.count),
-            borderColor: "#4F46E5",
-            backgroundColor: "rgba(79,70,229,0.1)",
-            fill: true,
-            tension: 0.3
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: { ticks: { color: "#a1a1aa" } },
-            y: { ticks: { color: "#a1a1aa" } }
-          },
-          plugins: { legend: { display: false } }
-        }
-      });
-    }
-
-    // Render device and browser breakdown charts
-    function renderBreakdownCharts(deviceData = [], browserData = []) {
-      if (window.deviceChart) window.deviceChart.destroy();
-      window.deviceChart = new Chart(document.getElementById("device-chart"), {
-        type: "pie",
-        data: {
-          labels: deviceData.map(d => d.device_type),
-          datasets: [{
-            data: deviceData.map(d => d.count),
-            backgroundColor: ["#4F46E5", "#7C3AED", "#EC4899"]
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: "bottom", labels: { boxWidth: 12, color: "#a1a1aa" } }
-          }
-        }
-      });
-
-      if (window.browserChart) window.browserChart.destroy();
-      window.browserChart = new Chart(document.getElementById("browser-chart"), {
-        type: "doughnut",
-        data: {
-          labels: browserData.map(d => d.browser),
-          datasets: [{
-            data: browserData.map(d => d.count),
-            backgroundColor: ["#10B981", "#F59E0B", "#3B82F6", "#D946EF", "#EF4444"]
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: "bottom", labels: { boxWidth: 12, color: "#a1a1aa" } }
-          }
-        }
-      });
-    }
-
-    // Populate IP address datalist for autocomplete
-    function populateIpDatalist(ips = []) {
-      const dl = document.getElementById("ip-list");
-      dl.innerHTML = "";
-      ips.forEach(ip => {
-        const o = document.createElement("option");
-        o.value = ip;
-        dl.appendChild(o);
-      });
-    }
-
-    // Fetch analytics data from backend and render all components
-    async function fetchAndRenderData() {
+    // Fetch & render all
+    let datePicker;
+    async function fetchAndRenderData(){
       document.getElementById('loader-overlay').classList.remove('hidden');
       try {
-        const params = new URLSearchParams({
-          ...(document.getElementById("country-filter").value && { country_filter: document.getElementById("country-filter").value }),
-          ...(document.getElementById("region-filter").value && { region_filter: document.getElementById("region-filter").value }),
-          ...(document.getElementById("isp-filter").value && { isp_filter: document.getElementById("isp-filter").value }),
-          ...(document.getElementById("device-filter").value && { device_filter: document.getElementById("device-filter").value }),
-          ...(document.getElementById("browser-filter").value && { browser_filter: document.getElementById("browser-filter").value }),
-          ...(document.getElementById("url-filter").value && { url_filter: document.getElementById("url-filter").value }),
-          ...(document.getElementById("ip-filter").value && { ip_filter: document.getElementById("ip-filter").value }),
-          ...(document.getElementById("visitor-type-filter").value && { visitor_type_filter: document.getElementById("visitor-type-filter").value }),
-          ...(datePicker.getStartDate() && { start_date_filter: datePicker.getStartDate().toISOString() }),
-          ...(datePicker.getEndDate() && { end_date_filter: datePicker.getEndDate().toISOString() })
+        const params=new URLSearchParams({
+          ...(document.getElementById("country-filter").value&&{country_filter:document.getElementById("country-filter").value}),
+          ...(document.getElementById("region-filter").value&&{region_filter:document.getElementById("region-filter").value}),
+          ...(document.getElementById("isp-filter").value&&{isp_filter:document.getElementById("isp-filter").value}),
+          ...(document.getElementById("device-filter").value&&{device_filter:document.getElementById("device-filter").value}),
+          ...(document.getElementById("browser-filter").value&&{browser_filter:document.getElementById("browser-filter").value}),
+          ...(document.getElementById("url-filter").value&&{url_filter:document.getElementById("url-filter").value}),
+          ...(document.getElementById("ip-filter").value&&{ip_filter:document.getElementById("ip-filter").value}),
+          ...(document.getElementById("visitor-type-filter").value&&{visitor_type_filter:document.getElementById("visitor-type-filter").value}),
+          ...(datePicker.getStartDate()&&{start_date_filter:datePicker.getStartDate().toISOString()}),
+          ...(datePicker.getEndDate()&&{end_date_filter:datePicker.getEndDate().toISOString()})
         });
-
-        const response = await fetch(`/api/analytics?${params.toString()}`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-
+        const res=await fetch(`/api/analytics?${params}`);
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data=await res.json();
         renderStats(data.stats);
         renderMap(data.charts.by_country);
         renderRegionChart(data.charts.by_region);
         renderIspChart(data.charts.by_isp);
         renderDateChart(data.charts.by_date);
-        renderBreakdownCharts(data.charts.by_device, data.charts.by_browser);
+        renderBreakdownCharts(data.charts.by_device,data.charts.by_browser);
         renderVisitors(data.visitor_list);
-        populateSelectFilter("country-filter", data.meta.distinct_countries, "All Countries");
-        populateSelectFilter("region-filter", data.meta.distinct_regions, "All Regions");
-        populateSelectFilter("isp-filter", data.meta.distinct_isps, "All ISPs");
-        populateSelectFilter("device-filter", data.meta.distinct_devices, "All Devices");
-        populateSelectFilter("browser-filter", data.meta.distinct_browsers, "All Browsers");
-        populateSelectFilter("url-filter", data.meta.distinct_urls, "All URLs");
+        populateSelectFilter("country-filter",data.meta.distinct_countries,"All Countries");
+        populateSelectFilter("region-filter",data.meta.distinct_regions,"All Regions");
+        populateSelectFilter("isp-filter",data.meta.distinct_isps,"All ISPs");
+        populateSelectFilter("device-filter",data.meta.distinct_devices,"All Devices");
+        populateSelectFilter("browser-filter",data.meta.distinct_browsers,"All Browsers");
+        populateSelectFilter("url-filter",data.meta.distinct_urls,"All URLs");
         populateIpDatalist(data.meta.distinct_ips);
-      } catch (error) {
-        console.error("Failed to load analytics data:", error);
+      } catch(e) {
+        console.error("Load error:",e);
       } finally {
         document.getElementById('loader-overlay').classList.add('hidden');
       }
     }
 
-    // Populate visitor type filter options statically
-    function populateVisitorTypeFilter() {
-      const select = document.getElementById("visitor-type-filter");
-      select.innerHTML = `
-        <option value="all">All Visitors</option>
-        <option value="unique">Unique</option>
-        <option value="repeated">Repeated</option>`;
-    }
-
-    // Reset all filters and reload data
-    function resetFilters() {
-      document.querySelectorAll('select, input').forEach(el => el.value = '');
+    // Reset filters
+    function resetFilters(){
+      document.querySelectorAll('select,input').forEach(el=>el.value='');
       populateVisitorTypeFilter();
       fetchAndRenderData();
     }
 
-    // Event listeners and initialization
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded',()=>{
       populateVisitorTypeFilter();
-
-      datePicker = new Litepicker({
-        element: document.getElementById('date-filter'),
-        singleMode: false,
-        format: 'MMM D, YYYY'
-      });
-
-      document.getElementById('apply-filters-btn').addEventListener('click', fetchAndRenderData);
-      document.getElementById('reset-filters-btn').addEventListener('click', resetFilters);
-
-      document.getElementById('visitors-container').addEventListener('click', (event) => {
-        const header = event.target.closest('.group-header');
-        if (header) {
-          const container = header.nextElementSibling;
-          container.classList.toggle('collapsed');
-          const icon = header.querySelector('.chevron-icon');
-          icon.classList.toggle('-rotate-90');
-        }
-      });
-
+      datePicker=new Litepicker({element:document.getElementById('date-filter'),singleMode:false,format:'MMM D, YYYY'});
+      document.getElementById('apply-filters-btn').onclick=fetchAndRenderData;
+      document.getElementById('reset-filters-btn').onclick=resetFilters;
       fetchAndRenderData();
     });
   </script>
