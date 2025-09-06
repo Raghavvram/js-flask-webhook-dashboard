@@ -17,7 +17,7 @@ supabase_key = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(supabase_url, supabase_key)
 
 def get_country_code(country_name):
-    if not country_name:
+    if not country_name or country_name == 'unknown':
         return None
     try:
         country = pycountry.countries.get(name=country_name)
@@ -26,7 +26,7 @@ def get_country_code(country_name):
         country = pycountry.countries.search_fuzzy(country_name)
         if country:
             return country[0].alpha_2
-    except (AttributeError, KeyError, LookupError):
+    except Exception:
         return None
     return None
 
@@ -37,7 +37,6 @@ def dashboard():
 @app.route('/api/analytics', methods=['GET'])
 def get_analytics():
     try:
-        # UPDATED: Added ip_filter to the parameters
         params = {
             'country_filter': request.args.get('country_filter') or None,
             'start_date_filter': request.args.get('start_date_filter') or None,
@@ -46,76 +45,109 @@ def get_analytics():
             'device_filter': request.args.get('device_filter') or None,
             'url_filter': request.args.get('url_filter') or None,
             'browser_filter': request.args.get('browser_filter') or None,
-            'ip_filter': request.args.get('ip_filter') or None, # <-- This line is new
+            'ip_filter': request.args.get('ip_filter') or None
         }
         response = supabase.rpc('get_filtered_analytics_visual', params).execute()
-        data = response.data
-
-        if data and 'stats' in data:
-            total = data['stats'].get('total_visitors', 0)
-            unique = data['stats'].get('unique_visitors', 0)
-            data['stats']['repeated_visitors'] = total - unique
-
+        data = response.data or {}
+        if 'stats' in data:
+            stats = data['stats']
+            total = stats.get('total_visitors', 0)
+            unique = stats.get('unique_visitors', 0)
+            stats['repeated_visitors'] = max(0, total - unique)
+            data['stats'] = stats
         return jsonify(data)
     except Exception as e:
-        print(f"AN ERROR OCCURRED IN /api/analytics: {e}")
+        app.logger.error(f"AN ERROR OCCURRED IN /api/analytics: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/track', methods=['POST'])
 def track():
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "Invalid JSON"}), 400
-
-    user_agent_string = data.get("userAgent", "")
-    user_agent = parse(user_agent_string)
-
-    device_type = "Desktop"
-    if user_agent.is_mobile:
-        device_type = "Mobile"
-    elif user_agent.is_tablet:
-        device_type = "Tablet"
-
-    country_name = data.get("country")
-
-    visitor_data = {
-        "public_ip": data.get("publicIp"),
-        "country": country_name,
-        "country_code": get_country_code(country_name),
-        "city": data.get("city"),
-        "page_visited": data.get("pageVisited"),
-        "user_agent": user_agent_string,
-        "device_type": device_type,
-        "browser": user_agent.browser.family,
-        "operating_system": user_agent.os.family,
-        "session_id": data.get("sessionId")
-    }
-
     try:
-        supabase.table('visitors').insert(visitor_data).execute()
+        data = request.get_json(force=True)
+        session_id = data.get("sessionId")
+        if not session_id:
+            return jsonify({"error": "Missing sessionId"}), 400
+
+        ua_string = data.get("userAgent", "")
+        ua = parse(ua_string)
+        if ua.is_mobile:
+            device_type = "Mobile"
+        elif ua.is_tablet:
+            device_type = "Tablet"
+        else:
+            device_type = "Desktop"
+
+        country = data.get("country")
+        if country == 'unknown':
+            country = None
+        city = data.get("city")
+        if city == 'unknown':
+            city = None
+        region = data.get("region")
+        if region == 'unknown':
+            region = None
+        isp = data.get("isp")
+        if isp == 'unknown':
+            isp = None
+        public_ip = data.get("publicIp")
+        if public_ip == 'unknown':
+            public_ip = None
+
+        country_code = data.get("countryCode") or get_country_code(country)
+        first_seen = data.get("timestamp")  # JavaScript timestamp
+
+        visitor_record = {
+            "session_id": session_id,
+            "public_ip": public_ip,
+            "country": country,
+            "country_code": country_code,
+            "region": region,
+            "city": city,
+            "isp": isp,
+            "page_visited": data.get("pageVisited"),
+            "user_agent": ua_string,
+            "device_type": device_type,
+            "browser": ua.browser.family,
+            "operating_system": ua.os.family,
+            "first_seen": first_seen
+        }
+        # Remove None values
+        visitor_record = {k: v for k, v in visitor_record.items() if v is not None}
+
+        supabase.table('visitors') \
+            .upsert(visitor_record, on_conflict='session_id') \
+            .execute()
+
         return jsonify({"success": True}), 201
     except Exception as e:
-        print(f"AN ERROR OCCURRED IN /track: {e}")
+        app.logger.error(f"AN ERROR OCCURRED IN /track: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/log/time', methods=['POST'])
 def log_time():
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid JSON"}), 400
-
+        data = request.get_json(force=True)
         session_id = data.get('sessionId')
         time_spent = data.get('timeSpentSeconds')
-
         if not session_id or time_spent is None:
-            return jsonify({"error": "Missing session_id or timeSpentSeconds"}), 400
+            return jsonify({"error": "Missing sessionId or timeSpentSeconds"}), 400
 
-        supabase.table('visitors').update({
-            'time_spent_seconds': time_spent
-        }).eq('session_id', session_id).execute()
+        # Validate time_spent
+        if time_spent < 0:
+            time_spent = 0
+        elif time_spent > 86400:
+            time_spent = 86400
+
+        supabase.table('visitors') \
+            .update({'time_spent_seconds': time_spent}) \
+            .eq('session_id', session_id) \
+            .execute()
 
         return jsonify({"success": True}), 200
     except Exception as e:
-        print(f"AN ERROR OCCURRED IN /log/time: {e}")
+        app.logger.error(f"AN ERROR OCCURRED IN /log/time: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
