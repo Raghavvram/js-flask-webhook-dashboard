@@ -732,7 +732,7 @@
             'SO': 'Somalia', 'SR': 'Suriname', 'SS': 'South Sudan', 'ST': 'São Tomé and Príncipe',
             'SV': 'El Salvador', 'SX': 'Sint Maarten', 'SY': 'Syria', 'SZ': 'Swaziland',
             'TC': 'Turks and Caicos Islands', 'TD': 'Chad', 'TF': 'French Southern Territories',
-            'TG': 'Togo', 'TH': 'Thailand', 'TJ': 'Tajikistan', 'TK': 'Tokelau',
+            'TG': 'Togo', 'TH': 'Thailand', 'TJ': 'Tajikistan', 'TK': 'Tokau',
             'TL': 'East Timor', 'TM': 'Turkmenistan', 'TN': 'Tunisia', 'TO': 'Tonga',
             'TR': 'Turkey', 'TT': 'Trinidad and Tobago', 'TV': 'Tuvalu', 'TW': 'Taiwan',
             'TZ': 'Tanzania', 'UA': 'Ukraine', 'UG': 'Uganda', 'UM': 'United States Minor Outlying Islands',
@@ -743,46 +743,21 @@
             'ZM': 'Zambia', 'ZW': 'Zimbabwe'
         };
 
-        // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for amCharts to load
             if (typeof am5 === 'undefined') {
                 console.error('amCharts not loaded');
                 return;
             }
-
             loadData();
-            setupFilters();
             setupFilterButtons();
-
-            // Auto-refresh every 30 seconds
-            setInterval(() => {
-                loadData();
-                updateLastUpdateTime();
-            }, 30000);
-
-            updateLastUpdateTime();
+            setInterval(loadData, 30000);
         });
 
-        // Setup filter buttons
         function setupFilterButtons() {
-            const applyBtn = document.getElementById('applyFiltersBtn');
-            const resetBtn = document.getElementById('resetFiltersBtn');
-
-            if (applyBtn) {
-                applyBtn.addEventListener('click', () => {
-                    loadData();
-                });
-            }
-
-            if (resetBtn) {
-                resetBtn.addEventListener('click', () => {
-                    resetFilters();
-                });
-            }
+            document.getElementById('applyFiltersBtn').addEventListener('click', loadData);
+            document.getElementById('resetFiltersBtn').addEventListener('click', resetFilters);
         }
 
-        // Reset all filters
         function resetFilters() {
             document.getElementById('countryFilter').value = '';
             document.getElementById('deviceFilter').value = '';
@@ -790,27 +765,17 @@
             document.getElementById('visitorTypeFilter').value = 'all';
             document.getElementById('startDateFilter').value = '';
             document.getElementById('endDateFilter').value = '';
-
-            // Reload data after reset
             loadData();
         }
 
-        // Render map with proper error handling
         function renderMap(countryData = []) {
             try {
-                // Dispose existing map if it exists
                 if (mapRoot) {
                     mapRoot.dispose();
-                    mapRoot = null;
                 }
-
-                // Create amCharts root
                 mapRoot = am5.Root.new("chartdiv");
-
-                // Set themes
                 mapRoot.setThemes([am5themes_Animated.new(mapRoot)]);
 
-                // Create map chart
                 let chart = mapRoot.container.children.push(am5map.MapChart.new(mapRoot, {
                     panX: "rotateX",
                     panY: "translateY",
@@ -819,95 +784,66 @@
                     homeGeoPoint: { longitude: 0, latitude: 0 }
                 }));
 
-                // Create polygon series for countries
                 let polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(mapRoot, {
                     geoJSON: am5geodata_worldLow,
-                    exclude: ["AQ"], // Exclude Antarctica
+                    exclude: ["AQ"],
                     valueField: "value",
                     calculateAggregates: true
                 }));
 
-                // Configure polygon templates with dark theme colors
                 polygonSeries.mapPolygons.template.setAll({
                     tooltipText: "{name}: {value} visitors",
                     interactive: true,
-                    fill: am5.color("#252d3d"), // Dark gray from our theme
-                    stroke: am5.color("#374151"), // Border color from our theme
+                    fill: am5.color(getComputedStyle(document.documentElement).getPropertyValue('--bg-tertiary')),
+                    stroke: am5.color(getComputedStyle(document.documentElement).getPropertyValue('--border-color')),
                     strokeWidth: 0.5
                 });
 
-                // Hover state
                 polygonSeries.mapPolygons.template.states.create("hover", {
-                    fill: am5.color("#3b82f6"), // Blue from our theme
-                    stroke: am5.color("#1d4ed8")
+                    fill: am5.color(getComputedStyle(document.documentElement).getPropertyValue('--accent-primary'))
                 });
 
-                // Heat rules for coloring based on visitor count
+                // *** FIX: Changed the MIN color to be visually distinct from the default map color ***
                 polygonSeries.set("heatRules", [{
                     target: polygonSeries.mapPolygons.template,
                     key: "fill",
-                    min: am5.color("#252d3d"),
-                    max: am5.color("#10b981"),
+                    min: am5.color(getComputedStyle(document.documentElement).getPropertyValue('--accent-primary')), // Start with blue
+                    max: am5.color(getComputedStyle(document.documentElement).getPropertyValue('--accent-success')), // End with green
                     dataField: "value",
-                    logarithmic: true // Makes color differences more visible
+                    logarithmic: false
                 }]);
 
-                // *** FIX IS HERE ***
-                // Process and set data correctly
-                const processedData = countryData.map(item => {
-                    // The 'id' MUST be the two-letter code to match the map's geoJSON.
-                    // The full country name is used for the 'name' property for the tooltip.
-                    return {
-                        id: item.id, // KEEP the two-letter code (e.g., "US")
-                        name: countryCodeMapping[item.id] || item.id, // Use full name for tooltip
-                        value: item.value || 0
-                    };
-                }).filter(item => item.value > 0 && item.id); // Filter out invalid data
+                const processedData = countryData.map(item => ({
+                    id: item.id,
+                    name: countryCodeMapping[item.id] || item.id,
+                    value: item.value || 0
+                })).filter(item => item.value > 0 && item.id);
 
-                // Set data to the series
                 polygonSeries.data.setAll(processedData);
-
-                // Add zoom controls for better usability
                 chart.set("zoomControl", am5map.ZoomControl.new(mapRoot, {}));
 
             } catch (error) {
                 console.error('Error rendering map:', error);
-                const chartDiv = document.getElementById('chartdiv');
-                if (chartDiv) {
-                    chartDiv.innerHTML = '<div class="error">Failed to load world map.</div>';
-                }
+                document.getElementById('chartdiv').innerHTML = '<div class="error">Failed to load world map.</div>';
             }
-        } 
-        // Load analytics data
+        }
+
         async function loadData() {
             try {
-                const params = new URLSearchParams();
-
-                // Add filters if they have values
-                const filters = {
-                    'country_filter': document.getElementById('countryFilter')?.value,
-                    'device_filter': document.getElementById('deviceFilter')?.value,
-                    'browser_filter': document.getElementById('browserFilter')?.value,
-                    'visitor_type_filter': document.getElementById('visitorTypeFilter')?.value,
-                    'start_date_filter': document.getElementById('startDateFilter')?.value,
-                    'end_date_filter': document.getElementById('endDateFilter')?.value
-                };
-
-                Object.entries(filters).forEach(([key, value]) => {
-                    if (value && value !== 'all' && value !== '') {
-                        params.append(key, value);
-                    }
+                const params = new URLSearchParams({
+                    'country_filter': document.getElementById('countryFilter').value,
+                    'device_filter': document.getElementById('deviceFilter').value,
+                    'browser_filter': document.getElementById('browserFilter').value,
+                    'visitor_type_filter': document.getElementById('visitorTypeFilter').value,
+                    'start_date_filter': document.getElementById('startDateFilter').value,
+                    'end_date_filter': document.getElementById('endDateFilter').value
                 });
 
                 const response = await fetch(`/api/analytics?${params.toString()}`);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const data = await response.json();
-                currentData = data;
 
+                updateLastUpdateTime();
                 updateStats(data.stats || {});
                 updateCharts(data.charts || {});
                 updateVisitorsTable(data.visitor_list || []);
@@ -919,7 +855,6 @@
             }
         }
 
-        // Update stats cards
         function updateStats(stats) {
             document.getElementById('totalVisitors').textContent = stats.total_visitors || 0;
             document.getElementById('uniqueVisitors').textContent = stats.unique_visitors || 0;
@@ -927,100 +862,52 @@
             document.getElementById('avgTimeOnPage').textContent = stats.avg_time_on_page || 0;
         }
 
-        // Update charts - now includes the world map
         function updateCharts(chartsData) {
             renderMap(chartsData.by_country || []);
-            updateDeviceChart(chartsData.by_device || []);
-            updateBrowserChart(chartsData.by_browser || []);
+            updateChart('deviceChart', 'device', 'doughnut', chartsData.by_device, item => item.device_type, item => item.count);
+            updateChart('browserChart', 'browser', 'bar', chartsData.by_browser, item => item.browser, item => item.count, { legend: { display: false } });
             updateTimeChart(chartsData.by_date || []);
         }
 
-        function updateDeviceChart(data) {
-            const ctx = document.getElementById('deviceChart').getContext('2d');
+        function updateChart(canvasId, chartKey, type, data, labelSelector, valueSelector, extraOptions = {}) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            if (charts[chartKey]) charts[chartKey].destroy();
 
-            if (charts.device) {
-                charts.device.destroy();
-            }
+            const chartColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+            const defaultOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#e6e8eb', padding: 20, usePointStyle: true }
+                    }
+                },
+                scales: type === 'bar' ? {
+                    y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+                    x: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } }
+                } : {}
+            };
 
-            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
-
-            charts.device = new Chart(ctx, {
-                type: 'doughnut',
+            charts[chartKey] = new Chart(ctx, {
+                type: type,
                 data: {
-                    labels: data.map(item => item.device_type || 'Unknown'),
+                    labels: data.map(labelSelector),
                     datasets: [{
-                        data: data.map(item => item.count),
-                        backgroundColor: colors,
+                        data: data.map(valueSelector),
+                        backgroundColor: type === 'bar' ? chartColors[0] : chartColors,
                         borderColor: '#1a1f2e',
-                        borderWidth: 2
+                        borderWidth: type === 'doughnut' ? 2 : 1,
+                        borderRadius: type === 'bar' ? 4 : 0
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#e6e8eb',
-                                padding: 20,
-                                usePointStyle: true
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function updateBrowserChart(data) {
-            const ctx = document.getElementById('browserChart').getContext('2d');
-
-            if (charts.browser) {
-                charts.browser.destroy();
-            }
-
-            charts.browser = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: data.map(item => item.browser || 'Unknown'),
-                    datasets: [{
-                        label: 'Visitors',
-                        data: data.map(item => item.count),
-                        backgroundColor: '#3b82f6',
-                        borderColor: '#1d4ed8',
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { color: '#9ca3af' },
-                            grid: { color: '#374151' }
-                        },
-                        x: {
-                            ticks: { color: '#9ca3af' },
-                            grid: { color: '#374151' }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
+                options: { ...defaultOptions, ...extraOptions }
             });
         }
 
         function updateTimeChart(data) {
             const ctx = document.getElementById('timeChart').getContext('2d');
-
-            if (charts.time) {
-                charts.time.destroy();
-            }
+            if (charts.time) charts.time.destroy();
 
             const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -1034,63 +921,39 @@
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
                         fill: true,
-                        tension: 0.4,
-                        borderWidth: 2,
-                        pointBackgroundColor: '#10b981',
-                        pointBorderColor: '#0f1419',
-                        pointBorderWidth: 2
+                        tension: 0.4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { color: '#9ca3af' },
-                            grid: { color: '#374151' }
-                        },
-                        x: {
-                            ticks: { color: '#9ca3af' },
-                            grid: { color: '#374151' }
-                        }
+                        y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+                        x: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } }
                     },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
         }
 
-        // Update visitors table
         function updateVisitorsTable(visitors) {
             const tbody = document.getElementById('visitorsTableBody');
-
             if (!visitors || visitors.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #6b7280;">No visitor data available</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#6b7280;">No visitor data available</td></tr>';
                 return;
             }
 
             tbody.innerHTML = visitors.map(visitor => {
                 const createdAt = new Date(visitor.created_at).toLocaleString();
                 const timeSpent = visitor.time_spent_seconds ? `${visitor.time_spent_seconds}s` : '-';
-                const pageUrl = visitor.page_visited ? 
-                    (visitor.page_visited.length > 40 ? visitor.page_visited.substring(0, 40) + '...' : visitor.page_visited) : '-';
+                const pageUrl = visitor.page_visited?.length > 40 ? `${visitor.page_visited.substring(0, 40)}...` : (visitor.page_visited || '-');
                 const location = [visitor.city, visitor.country].filter(Boolean).join(', ') || '-';
                 
-                let status;
-                let statusClass;
-
-                // *** FIX: Correctly determine visitor status ***
-                // A visitor is considered 'Active' only if time_spent_seconds is null (session hasn't ended).
+                let status, statusClass;
                 if (visitor.time_spent_seconds === null || typeof visitor.time_spent_seconds === 'undefined') {
                     status = 'Active';
                     statusClass = 'status-active';
                 } else {
-                    // If the session has ended (time_spent_seconds has a value), it is inactive.
-                    // Label it based on duration for more detail, but use the 'idle' style for all inactive sessions.
                     status = visitor.time_spent_seconds > 30 ? 'Engaged' : 'Brief';
                     statusClass = 'status-idle';
                 }
@@ -1110,93 +973,39 @@
             }).join('');
         }
 
-        // Update filter options
         function updateFilters(meta) {
-            updateFilterOptions('countryFilter', meta.distinct_countries || []);
-            updateFilterOptions('deviceFilter', meta.distinct_devices || []);
-            updateFilterOptions('browserFilter', meta.distinct_browsers || []);
+            updateFilterOptions('countryFilter', meta.distinct_countries);
+            updateFilterOptions('deviceFilter', meta.distinct_devices);
+            updateFilterOptions('browserFilter', meta.distinct_browsers);
         }
 
-        function updateFilterOptions(filterId, options) {
+        function updateFilterOptions(filterId, options = []) {
             const select = document.getElementById(filterId);
-            if (!select) return;
-
             const currentValue = select.value;
-            const defaultOption = select.children[0];
-
-            // Clear existing options except the first one
-            select.innerHTML = '';
-            select.appendChild(defaultOption);
-
-            // Add new options
+            select.innerHTML = `<option value="">All ${filterId.replace('Filter', 's')}</option>`;
             options.forEach(option => {
-                if (option && option !== 'null' && option !== null) {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option;
-                    optionElement.textContent = option;
-                    select.appendChild(optionElement);
+                if (option) {
+                    select.innerHTML += `<option value="${option}">${option}</option>`;
                 }
             });
-
-            // Restore selected value if it still exists
-            if (currentValue && [...select.options].some(opt => opt.value === currentValue)) {
-                select.value = currentValue;
-            }
+            select.value = currentValue;
         }
 
-        // Setup filter event listeners (auto-apply on change disabled, only on button click)
-        function setupFilters() {
-            // Remove auto-apply, filters only apply when button is clicked
-            console.log('Filters setup complete - manual apply mode');
-        }
-
-        // Update last update time
         function updateLastUpdateTime() {
-            const now = new Date();
-            document.getElementById('lastUpdate').textContent = 
-                `Last updated: ${now.toLocaleTimeString()}`;
+            document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
         }
 
-        // Show error message
         function showError(message) {
+            const content = document.querySelector('.content');
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error';
             errorDiv.textContent = message;
-
-            const content = document.querySelector('.content');
             content.insertBefore(errorDiv, content.firstChild);
-
-            // Remove error after 10 seconds
-            setTimeout(() => {
-                if (errorDiv.parentNode) {
-                    errorDiv.parentNode.removeChild(errorDiv);
-                }
-            }, 10000);
+            setTimeout(() => errorDiv.remove(), 10000);
         }
 
-        // Handle window resize for map
-        window.addEventListener('resize', () => {
-            if (mapRoot) {
-                setTimeout(() => {
-                    try {
-                        mapRoot.resize();
-                    } catch (error) {
-                        console.warn('Map resize failed:', error);
-                    }
-                }, 100);
-            }
-        });
-
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            if (mapRoot) {
-                try {
-                    mapRoot.dispose();
-                } catch (error) {
-                    console.warn('Map cleanup failed:', error);
-                }
-            }
-        });
+        window.addEventListener('resize', () => mapRoot?.resize());
+        window.addEventListener('beforeunload', () => mapRoot?.dispose());
     </script>
 </body>
 </html>
