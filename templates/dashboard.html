@@ -516,7 +516,6 @@
         </div>
 
         <div class="content">
-            <!-- Stats Cards -->
             <div class="stats-grid section-spacing">
                 <div class="stat-card">
                     <div class="stat-header">
@@ -556,7 +555,6 @@
                 </div>
             </div>
 
-            <!-- Filters -->
             <div class="filters section-spacing">
                 <h3>🔍 Advanced Filters</h3>
                 <div class="filter-grid">
@@ -595,7 +593,6 @@
                         <input type="date" id="endDateFilter">
                     </div>
                 </div>
-                <!-- Filter Buttons -->
                 <div class="filter-buttons">
                     <button class="btn btn-secondary" id="resetFiltersBtn">
                         🔄 Reset Filters
@@ -606,7 +603,6 @@
                 </div>
             </div>
 
-            <!-- World Map -->
             <div class="chart-container world-map-container section-spacing">
                 <div class="chart-header">
                     <h3>🌍 Global Visitor Distribution</h3>
@@ -616,7 +612,6 @@
                 </div>
             </div>
 
-            <!-- Charts Grid -->
             <div class="main-grid section-spacing">
                 <div class="chart-container">
                     <div class="chart-header">
@@ -637,7 +632,6 @@
                 </div>
             </div>
 
-            <!-- Timeline Chart -->
             <div class="chart-container section-spacing">
                 <div class="chart-header">
                     <h3>📈 Traffic Timeline</h3>
@@ -647,7 +641,6 @@
                 </div>
             </div>
 
-            <!-- Recent Visitors Table -->
             <div class="visitors-table section-spacing">
                 <div class="table-header">
                     <h3>👤 Recent Visitor Activity</h3>
@@ -1086,8 +1079,21 @@
                 const pageUrl = visitor.page_visited ? 
                     (visitor.page_visited.length > 40 ? visitor.page_visited.substring(0, 40) + '...' : visitor.page_visited) : '-';
                 const location = [visitor.city, visitor.country].filter(Boolean).join(', ') || '-';
-                const status = visitor.time_spent_seconds && visitor.time_spent_seconds > 30 ? 'Active' : 'Brief';
-                const statusClass = status === 'Active' ? 'status-active' : 'status-idle';
+                
+                let status;
+                let statusClass;
+
+                // *** FIX: Correctly determine visitor status ***
+                // A visitor is considered 'Active' only if time_spent_seconds is null (session hasn't ended).
+                if (visitor.time_spent_seconds === null || typeof visitor.time_spent_seconds === 'undefined') {
+                    status = 'Active';
+                    statusClass = 'status-active';
+                } else {
+                    // If the session has ended (time_spent_seconds has a value), it is inactive.
+                    // Label it based on duration for more detail, but use the 'idle' style for all inactive sessions.
+                    status = visitor.time_spent_seconds > 30 ? 'Engaged' : 'Brief';
+                    statusClass = 'status-idle';
+                }
 
                 return `
                     <tr>
