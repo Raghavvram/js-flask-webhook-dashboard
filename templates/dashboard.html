@@ -1,404 +1,669 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Analytics Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/bundle.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css" />
-  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
-  <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
-  <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
-  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
-  <style>
-    #chartdiv { width: 100%; height: 480px; border-radius: 0.5rem; }
-    .loader { border-top-color: #4f46e5; animation: spinner 1.5s linear infinite; }
-    @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .visits-container { overflow: hidden; max-height: 1000px; transition: max-height 0.3s ease; }
-    .visits-container.collapsed { max-height: 0; }
-    /* Scroll container for Recent Visitors */
-    #visitors-container {
-      max-height: 400px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: #7c3aed #1f2937;
-    }
-    #visitors-container::-webkit-scrollbar {
-      width: 8px;
-    }
-    #visitors-container::-webkit-scrollbar-thumb {
-      background-color: #7c3aed;
-      border-radius: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.1);
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #1e3c72;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filters {
+            background: #f1f5f9;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .filters h3 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            color: #475569;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            background: #ffffff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .chart-container h3 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        .visitors-table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .visitors-table h3 {
+            background: #1e3c72;
+            color: white;
+            padding: 20px 30px;
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-200 min-h-screen flex flex-col">
-  <div id="loader-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-90 flex items-center justify-center hidden z-50">
-    <div class="loader rounded-full border-8 border-t-8 border-gray-200 h-24 w-24"></div>
-  </div>
-
-  <header class="bg-gray-800 shadow p-6">
-    <h1 class="text-4xl font-semibold text-center text-indigo-400 tracking-wide">Analytics Dashboard</h1>
-  </header>
-
-  <main class="flex-grow container mx-auto px-6 py-8 max-w-7xl">
-    <!-- Filters Grid -->
-    <section class="bg-gray-800 rounded-lg p-6 shadow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-5 mb-8">
-      <div class="col-span-1 md:col-span-2">
-        <label for="date-filter" class="block text-sm font-medium text-gray-400 mb-1">Date Range</label>
-        <input id="date-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="All Time" />
-      </div>
-      <div>
-        <label for="visitor-type-filter" class="block text-sm font-medium text-gray-400 mb-1">Visitor Type</label>
-        <select id="visitor-type-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
-      </div>
-      <div>
-        <label for="country-filter" class="block text-sm font-medium text-gray-400 mb-1">Country</label>
-        <select id="country-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
-      </div>
-      <div>
-        <label for="isp-filter" class="block text-sm font-medium text-gray-400 mb-1">ISP</label>
-        <select id="isp-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
-      </div>
-      <div>
-        <label for="device-filter" class="block text-sm font-medium text-gray-400 mb-1">Device</label>
-        <select id="device-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
-      </div>
-      <div>
-        <label for="browser-filter" class="block text-sm font-medium text-gray-400 mb-1">Browser</label>
-        <select id="browser-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
-      </div>
-      <div>
-        <label for="url-filter" class="block text-sm font-medium text-gray-400 mb-1">URL</label>
-        <select id="url-filter" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
-      </div>
-      <div>
-        <label for="ip-filter" class="block text-sm font-medium text-gray-400 mb-1">IP Address</label>
-        <input id="ip-filter" list="ip-list" class="w-full rounded-md bg-gray-700 border border-gray-600 py-2 px-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Filter by IP..." />
-        <datalist id="ip-list"></datalist>
-      </div>
-      <div class="col-span-1 sm:col-span-2 lg:col-span-8 flex justify-between mt-4 space-x-4">
-        <button id="reset-filters-btn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded text-lg font-semibold transition">Reset</button>
-        <button id="apply-filters-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded text-lg font-semibold transition">Apply Filters</button>
-      </div>
-    </section>
-
-    <!-- Stats Cards -->
-    <section id="stats-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-      <!-- Stat cards injected dynamically -->
-    </section>
-
-    <!-- Main Charts Area -->
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-7 mb-12">
-      <div class="lg:col-span-2 space-y-8">
-        <div class="bg-gray-800 p-6 rounded-lg shadow">
-          <h3 class="text-xl font-semibold mb-5 text-indigo-400">Visitors by Country</h3>
-          <div id="chartdiv"></div>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>📊 Analytics Dashboard</h1>
+            <p>Real-time website visitor analytics and insights</p>
         </div>
 
-        <div class="bg-gray-800 p-6 rounded-lg shadow">
-          <h3 class="text-xl font-semibold mb-5 text-indigo-400">Visitors by ISP</h3>
-          <canvas id="isp-chart" class="w-full" style="min-height: 260px;"></canvas>
-        </div>
-      </div>
-
-      <div class="space-y-8">
-        <div class="bg-gray-800 p-6 rounded-lg shadow">
-          <h3 class="text-xl font-semibold mb-5 text-indigo-400">Visitors by Date</h3>
-          <canvas id="date-chart" class="w-full" style="min-height: 260px;"></canvas>
-        </div>
-
-        <div class="bg-gray-800 p-6 rounded-lg shadow">
-          <h3 class="text-xl font-semibold mb-5 text-indigo-400">Visitors by Device</h3>
-          <canvas id="device-chart" class="w-full" style="min-height: 220px;"></canvas>
-        </div>
-
-        <div class="bg-gray-800 p-6 rounded-lg shadow">
-          <h3 class="text-xl font-semibold mb-5 text-indigo-400">Top Browsers</h3>
-          <canvas id="browser-chart" class="w-full" style="min-height: 220px;"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <!-- Recent Visitors Table -->
-    <section class="bg-gray-800 rounded-lg shadow">
-      <div class="p-4 border-b border-gray-700">
-        <h3 class="text-2xl font-semibold text-indigo-400">Recent Visitors</h3>
-      </div>
-      <div id="visitors-container" class="p-4 space-y-4 overflow-y-auto"></div>
-    </section>
-  </main>
-
-  <script>
-    // Utils
-    function formatDuration(s) {
-      if (!s || isNaN(s) || s < 0) return "N/A";
-      if (s < 60) return `${Math.round(s)}s`;
-      const m = Math.floor(s/60), r = Math.round(s%60);
-      return `${m}m ${r}s`;
-    }
-
-    function renderStats(stats={}) {
-      const t = stats.total_visitors || 0;
-      const u = stats.unique_visitors || 0;
-      const r = Math.max(0, t - u);
-      const a = stats.avg_time_on_page || 0;
-      document.getElementById("stats-grid").innerHTML = `
-        <div class="bg-gray-900 p-6 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
-          <h4 class="text-gray-400 text-sm font-medium mb-2">Total Visits</h4>
-          <p class="text-indigo-400 text-4xl font-extrabold">${t}</p>
-        </div>
-        <div class="bg-gray-900 p-6 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
-          <h4 class="text-gray-400 text-sm font-medium mb-2">Unique Visitors</h4>
-          <p class="text-indigo-400 text-4xl font-extrabold">${u}</p>
-        </div>
-        <div class="bg-gray-900 p-6 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
-          <h4 class="text-gray-400 text-sm font-medium mb-2">Repeated Visitors</h4>
-          <p class="text-indigo-400 text-4xl font-extrabold">${r}</p>
-        </div>
-        <div class="bg-gray-900 p-6 rounded-lg border border-gray-700 flex flex-col items-center justify-center">
-          <h4 class="text-gray-400 text-sm font-medium mb-2">Avg. Time on Page</h4>
-          <p class="text-indigo-400 text-4xl font-extrabold">${formatDuration(a)}</p>
-        </div>`;
-    }
-
-    function populateVisitorTypeFilter(){
-      document.getElementById("visitor-type-filter").innerHTML = `
-        <option value="all">All Visitors</option>
-        <option value="unique">Unique</option>
-        <option value="repeated">Repeated</option>`;
-    }
-
-    function populateSelectFilter(id, opts, label){
-      const sel = document.getElementById(id);
-      sel.innerHTML = `<option value="">${label}</option>`;
-      (opts||[]).sort().forEach(o=>{
-        const opt=document.createElement("option");
-        opt.value=o; opt.textContent=o; sel.appendChild(opt);
-      });
-    }
-
-    function createSingleVisitHTML(v){
-      return `
-        <div class="grid grid-cols-2 md:grid-cols-[1.5fr_1.5fr_2fr_1fr_2fr] gap-3 border-t border-gray-700 py-3 text-sm">
-          <div>${v.country||'Unknown'}, ${v.city||'N/A'}</div>
-          <div>${v.device_type||'N/A'}<br/><span class="text-xs text-gray-400">${v.browser||''} on ${v.operating_system||''}</span></div>
-          <div class="break-words">${v.page_visited||''}</div>
-          <div class="text-center">${formatDuration(v.time_spent_seconds)}</div>
-          <div class="text-right">${new Date(v.created_at).toLocaleString()}</div>
-        </div>`;
-    }
-
-    function renderVisitors(visitors=[]){
-      const cont=document.getElementById("visitors-container");
-      if(!visitors.length){
-        cont.innerHTML = '<p class="text-center text-gray-500 py-10">No recent visitors data.</p>';
-        return;
-      }
-      const groups=visitors.reduce((a,v)=>{
-        const ip=v.public_ip||'Unknown IP';
-        (a[ip]||(a[ip]=[])).push(v);
-        return a;
-      },{});
-      cont.innerHTML=Object.entries(groups).map(([ip,vs])=>{
-        const rows=vs.map(createSingleVisitHTML).join("");
-        const collapsed=vs.length>1?"collapsed":"";
-        const rot=collapsed?"-rotate-90":"";
-        return `
-          <div class="bg-gray-900 rounded-lg border border-gray-700">
-            <div class="p-4 flex justify-between cursor-pointer hover:bg-gray-700 select-none" onclick="this.nextElementSibling.classList.toggle('collapsed'); this.querySelector('.chevron-icon').classList.toggle('-rotate-90');">
-              <div>
-                <code class="text-indigo-400 font-mono">${ip}</code>
-                <span class="bg-gray-700 text-xs rounded pl-2 pr-3 ml-2 tracking-tight">${vs.length} visit${vs.length>1?'s':''}</span>
-              </div>
-              <svg class="chevron-icon w-5 h-5 text-gray-400 transform transition-transform duration-200 ${rot}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-              </svg>
+        <div class="content">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalVisitors">-</div>
+                    <div class="stat-label">Total Visitors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="uniqueVisitors">-</div>
+                    <div class="stat-label">Unique Visitors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="repeatedVisitors">-</div>
+                    <div class="stat-label">Repeat Visitors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgTimeOnPage">-</div>
+                    <div class="stat-label">Avg. Time (seconds)</div>
+                </div>
             </div>
-            <div class="visits-container px-4 pb-4 ${collapsed}">${rows}</div>
-          </div>`;
-      }).join("");
-    }
 
-    // AmCharts map
-    function renderMap(data=[]){
-      if(window.mapRoot) mapRoot.dispose();
-      mapRoot=am5.Root.new("chartdiv");
-      mapRoot.setThemes([am5themes_Animated.new(mapRoot)]);
-      const chart=mapRoot.container.children.push(am5map.MapChart.new(mapRoot,{
-        projection:am5map.geoMercator()
-      }));
-      const series=chart.series.push(am5map.MapPolygonSeries.new(mapRoot,{
-        geoJSON:am5geodata_worldLow,
-        exclude:["AQ"],
-        valueField:"value"
-      }));
-      series.mapPolygons.template.setAll({tooltipText:"{name}: {value}",interactive:true,fill:am5.color(0x4a5568)});
-      series.mapPolygons.template.states.create("hover",{fill:am5.color(0x4f46e5)});
-      series.set("heatRules",[{
-        target:series.mapPolygons.template,
-        key:"fill",
-        min:am5.color(0x4a5568),
-        max:am5.color(0x6366f1),
-        dataField:"value"
-      }]);
-      series.data.setAll(data);
-    }
+            <!-- Filters -->
+            <div class="filters">
+                <h3>🔍 Filters</h3>
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>Country</label>
+                        <select id="countryFilter">
+                            <option value="">All Countries</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Device Type</label>
+                        <select id="deviceFilter">
+                            <option value="">All Devices</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Browser</label>
+                        <select id="browserFilter">
+                            <option value="">All Browsers</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Visitor Type</label>
+                        <select id="visitorTypeFilter">
+                            <option value="all">All Visitors</option>
+                            <option value="unique">Unique Only</option>
+                            <option value="repeated">Repeated Only</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Start Date</label>
+                        <input type="date" id="startDateFilter">
+                    </div>
+                    <div class="filter-group">
+                        <label>End Date</label>
+                        <input type="date" id="endDateFilter">
+                    </div>
+                </div>
+            </div>
 
-    // Chart.js charts
-    function renderRegionChart(data=[]){
-      if(window.regionChart) regionChart.destroy();
-      regionChart=new Chart(document.getElementById("isp-chart"),{
-        type:"bar",
-        data:{
-          labels:data.map(d=>d.id),
-          datasets:[{
-            label:"Visits",
-            data:data.map(d=>d.value),
-            backgroundColor:"#FBBF24"
-          }]
-        },
-        options:{
-          responsive:true,
-          scales:{x:{ticks:{color:"#a1a1aa"}},y:{ticks:{color:"#a1a1aa"}}}
-        }
-      });
-    }
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>🌍 Visitors by Country</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="countryChart"></canvas>
+                    </div>
+                </div>
 
-    function renderIspChart(data=[]){
-      if(window.ispChart) ispChart.destroy();
-      ispChart=new Chart(document.getElementById("isp-chart"),{
-        type:"bar",
-        data:{
-          labels:data.map(d=>d.id),
-          datasets:[{
-            label:"Visits",
-            data:data.map(d=>d.value),
-            backgroundColor:"#14B8A6"
-          }]
-        },
-        options:{
-          responsive:true,
-          scales:{x:{ticks:{color:"#a1a1aa"}},y:{ticks:{color:"#a1a1aa"}}}
-        }
-      });
-    }
+                <div class="chart-container">
+                    <h3>📱 Visitors by Device</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="deviceChart"></canvas>
+                    </div>
+                </div>
 
-    function renderDateChart(data=[]){
-      if(window.dateChart) dateChart.destroy();
-      dateChart=new Chart(document.getElementById("date-chart"),{
-        type:"line",
-        data:{
-          labels:data.map(d=>new Date(d.date).toLocaleDateString(undefined,{month:"short",day:"numeric"})),
-          datasets:[{
-            label:"Sessions",
-            data:data.map(d=>d.count),
-            borderColor:"#4F46E5",
-            backgroundColor:"rgba(79,70,229,0.1)",
-            fill:true,
-            tension:0.3
-          }]
-        },
-        options:{
-          responsive:true,
-          scales:{x:{ticks:{color:"#a1a1aa"}},y:{ticks:{color:"#a1a1aa"}}},
-          plugins:{legend:{display:false}}
-        }
-      });
-    }
+                <div class="chart-container">
+                    <h3>🌐 Visitors by Browser</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="browserChart"></canvas>
+                    </div>
+                </div>
 
-    function renderBreakdownCharts(deviceData=[],browserData=[]){
-      if(window.deviceChart) deviceChart.destroy();
-      deviceChart=new Chart(document.getElementById("device-chart"),{
-        type:"pie",
-        data:{
-          labels:deviceData.map(d=>d.device_type),
-          datasets:[{data:deviceData.map(d=>d.count),backgroundColor:["#4F46E5","#7C3AED","#EC4899"]}]
-        },
-        options:{
-          responsive:true,
-          plugins:{legend:{position:"bottom",labels:{boxWidth:12,color:"#a1a1aa"}}}
-        }
-      });
+                <div class="chart-container">
+                    <h3>📈 Visitors Over Time</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="timeChart"></canvas>
+                    </div>
+                </div>
+            </div>
 
-      if(window.browserChart) browserChart.destroy();
-      browserChart=new Chart(document.getElementById("browser-chart"),{
-        type:"doughnut",
-        data:{
-          labels:browserData.map(d=>d.browser),
-          datasets:[{data:browserData.map(d=>d.count),backgroundColor:["#10B981","#F59E0B","#3B82F6","#D946EF","#EF4444"]}]
-        },
-        options:{
-          responsive:true,
-          plugins:{legend:{position:"bottom",labels:{boxWidth:12,color:"#a1a1aa"}}}
-        }
-      });
-    }
+            <!-- Recent Visitors Table -->
+            <div class="visitors-table">
+                <h3>👥 Recent Visitors</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Country</th>
+                                <th>City</th>
+                                <th>Device</th>
+                                <th>Browser</th>
+                                <th>Page</th>
+                                <th>Time Spent</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody id="visitorsTableBody">
+                            <tr>
+                                <td colspan="8" class="loading">Loading visitors...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    function populateIpDatalist(ips=[]){
-      const dl=document.getElementById("ip-list");
-      dl.innerHTML="";
-      ips.forEach(ip=>{const o=document.createElement("option");o.value=ip;dl.appendChild(o);});
-    }
+    <script>
+        let charts = {};
+        let currentData = {};
 
-    // Fetch & render all
-    let datePicker;
-    async function fetchAndRenderData(){
-      document.getElementById('loader-overlay').classList.remove('hidden');
-      try {
-        const params=new URLSearchParams({
-          ...(document.getElementById("country-filter").value&&{country_filter:document.getElementById("country-filter").value}),
-          ...(document.getElementById("isp-filter").value&&{isp_filter:document.getElementById("isp-filter").value}),
-          ...(document.getElementById("device-filter").value&&{device_filter:document.getElementById("device-filter").value}),
-          ...(document.getElementById("browser-filter").value&&{browser_filter:document.getElementById("browser-filter").value}),
-          ...(document.getElementById("url-filter").value&&{url_filter:document.getElementById("url-filter").value}),
-          ...(document.getElementById("ip-filter").value&&{ip_filter:document.getElementById("ip-filter").value}),
-          ...(document.getElementById("visitor-type-filter").value&&{visitor_type_filter:document.getElementById("visitor-type-filter").value}),
-          ...(datePicker.getStartDate()&&{start_date_filter:datePicker.getStartDate().toISOString()}),
-          ...(datePicker.getEndDate()&&{end_date_filter:datePicker.getEndDate().toISOString()})
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            setupFilters();
+
+            // Auto-refresh every 30 seconds
+            setInterval(loadData, 30000);
         });
-        const res=await fetch(`/api/analytics?${params}`);
-        if(!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data=await res.json();
-        renderStats(data.stats);
-        renderMap(data.charts.by_country);
-        renderRegionChart(data.charts.by_isp);
-        renderIspChart(data.charts.by_isp);
-        renderDateChart(data.charts.by_date);
-        renderBreakdownCharts(data.charts.by_device,data.charts.by_browser);
-        renderVisitors(data.visitor_list);
-        populateSelectFilter("country-filter",data.meta.distinct_countries,"All Countries");
-        populateSelectFilter("isp-filter",data.meta.distinct_isps,"All ISPs");
-        populateSelectFilter("device-filter",data.meta.distinct_devices,"All Devices");
-        populateSelectFilter("browser-filter",data.meta.distinct_browsers,"All Browsers");
-        populateSelectFilter("url-filter",data.meta.distinct_urls,"All URLs");
-        populateIpDatalist(data.meta.distinct_ips);
-      } catch(e) {
-        console.error("Load error:",e);
-      } finally {
-        document.getElementById('loader-overlay').classList.add('hidden');
-      }
-    }
 
-    function resetFilters(){
-      document.querySelectorAll('select,input').forEach(el=>el.value='');
-      populateVisitorTypeFilter();
-      fetchAndRenderData();
-    }
+        // Load analytics data
+        async function loadData() {
+            try {
+                const params = new URLSearchParams();
 
-    document.addEventListener('DOMContentLoaded',()=>{
-      populateVisitorTypeFilter();
-      datePicker=new Litepicker({
-        element:document.getElementById('date-filter'),
-        singleMode:false,
-        format:'MMM D, YYYY'
-      });
-      document.getElementById('apply-filters-btn').onclick=fetchAndRenderData;
-      document.getElementById('reset-filters-btn').onclick=resetFilters;
-      fetchAndRenderData();
-    });
-  </script>
+                // Add filters if they have values
+                const filters = {
+                    'country_filter': document.getElementById('countryFilter')?.value,
+                    'device_filter': document.getElementById('deviceFilter')?.value,
+                    'browser_filter': document.getElementById('browserFilter')?.value,
+                    'visitor_type_filter': document.getElementById('visitorTypeFilter')?.value,
+                    'start_date_filter': document.getElementById('startDateFilter')?.value,
+                    'end_date_filter': document.getElementById('endDateFilter')?.value
+                };
+
+                Object.entries(filters).forEach(([key, value]) => {
+                    if (value && value !== 'all' && value !== '') {
+                        params.append(key, value);
+                    }
+                });
+
+                const response = await fetch(`/api/analytics?${params.toString()}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                currentData = data;
+
+                updateStats(data.stats || {});
+                updateCharts(data.charts || {});
+                updateVisitorsTable(data.visitor_list || []);
+                updateFilters(data.meta || {});
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError('Failed to load analytics data: ' + error.message);
+            }
+        }
+
+        // Update stats cards
+        function updateStats(stats) {
+            document.getElementById('totalVisitors').textContent = stats.total_visitors || 0;
+            document.getElementById('uniqueVisitors').textContent = stats.unique_visitors || 0;
+            document.getElementById('repeatedVisitors').textContent = stats.repeated_visitors || 0;
+            document.getElementById('avgTimeOnPage').textContent = stats.avg_time_on_page || 0;
+        }
+
+        // Update charts
+        function updateCharts(chartsData) {
+            updateCountryChart(chartsData.by_country || []);
+            updateDeviceChart(chartsData.by_device || []);
+            updateBrowserChart(chartsData.by_browser || []);
+            updateTimeChart(chartsData.by_date || []);
+        }
+
+        function updateCountryChart(data) {
+            const ctx = document.getElementById('countryChart').getContext('2d');
+
+            if (charts.country) {
+                charts.country.destroy();
+            }
+
+            const sortedData = data.sort((a, b) => b.value - a.value).slice(0, 10);
+
+            charts.country = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: sortedData.map(item => item.id || 'Unknown'),
+                    datasets: [{
+                        data: sortedData.map(item => item.value),
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#FF9F40', '#FF6384',
+                            '#C9CBCF', '#4BC0C0', '#9966FF', '#FF9F40', '#FF6384'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateDeviceChart(data) {
+            const ctx = document.getElementById('deviceChart').getContext('2d');
+
+            if (charts.device) {
+                charts.device.destroy();
+            }
+
+            charts.device = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.map(item => item.device_type || 'Unknown'),
+                    datasets: [{
+                        data: data.map(item => item.count),
+                        backgroundColor: ['#36A2EB', '#FF6384', '#FFCE56', '#4BC0C0']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateBrowserChart(data) {
+            const ctx = document.getElementById('browserChart').getContext('2d');
+
+            if (charts.browser) {
+                charts.browser.destroy();
+            }
+
+            charts.browser = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item.browser || 'Unknown'),
+                    datasets: [{
+                        label: 'Visitors',
+                        data: data.map(item => item.count),
+                        backgroundColor: '#667eea',
+                        borderColor: '#667eea',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTimeChart(data) {
+            const ctx = document.getElementById('timeChart').getContext('2d');
+
+            if (charts.time) {
+                charts.time.destroy();
+            }
+
+            const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            charts.time = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sortedData.map(item => item.date),
+                    datasets: [{
+                        label: 'Visitors',
+                        data: sortedData.map(item => item.count),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update visitors table
+        function updateVisitorsTable(visitors) {
+            const tbody = document.getElementById('visitorsTableBody');
+
+            if (!visitors || visitors.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748b;">No visitors found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = visitors.map(visitor => {
+                const createdAt = new Date(visitor.created_at).toLocaleString();
+                const timeSpent = visitor.time_spent_seconds ? `${visitor.time_spent_seconds}s` : '-';
+                const pageUrl = visitor.page_visited ? visitor.page_visited.substring(0, 50) + (visitor.page_visited.length > 50 ? '...' : '') : '-';
+
+                return `
+                    <tr>
+                        <td>${createdAt}</td>
+                        <td>${visitor.country || '-'}</td>
+                        <td>${visitor.city || '-'}</td>
+                        <td>${visitor.device_type || '-'}</td>
+                        <td>${visitor.browser || '-'}</td>
+                        <td title="${visitor.page_visited || ''}">${pageUrl}</td>
+                        <td>${timeSpent}</td>
+                        <td>${visitor.public_ip || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Update filter options
+        function updateFilters(meta) {
+            updateFilterOptions('countryFilter', meta.distinct_countries || []);
+            updateFilterOptions('deviceFilter', meta.distinct_devices || []);
+            updateFilterOptions('browserFilter', meta.distinct_browsers || []);
+        }
+
+        function updateFilterOptions(filterId, options) {
+            const select = document.getElementById(filterId);
+            if (!select) return;
+
+            const currentValue = select.value;
+            const defaultOption = select.children[0];
+
+            // Clear existing options except the first one
+            select.innerHTML = '';
+            select.appendChild(defaultOption);
+
+            // Add new options
+            options.forEach(option => {
+                if (option && option !== 'null' && option !== null) {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    select.appendChild(optionElement);
+                }
+            });
+
+            // Restore selected value if it still exists
+            if (currentValue && [...select.options].some(opt => opt.value === currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        // Setup filter event listeners
+        function setupFilters() {
+            const filterIds = ['countryFilter', 'deviceFilter', 'browserFilter', 'visitorTypeFilter', 'startDateFilter', 'endDateFilter'];
+
+            filterIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', function() {
+                        loadData();
+                    });
+                }
+            });
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+
+            const content = document.querySelector('.content');
+            content.insertBefore(errorDiv, content.firstChild);
+
+            // Remove error after 10 seconds
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.parentNode.removeChild(errorDiv);
+                }
+            }, 10000);
+        }
+    </script>
 </body>
 </html>
-

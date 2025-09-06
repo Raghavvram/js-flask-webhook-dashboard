@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
 from dateutil.parser import parse as date_parse
-
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
@@ -12,12 +11,11 @@ import pycountry
 load_dotenv()
 
 app = Flask(__name__, template_folder='templates')
-CORS(app)
+CORS(app, origins="*", allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "OPTIONS"])
 
 supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(supabase_url, supabase_key)
-
 
 def get_country_code(country_name):
     if not country_name or country_name.lower() == 'unknown':
@@ -33,14 +31,15 @@ def get_country_code(country_name):
         return None
     return None
 
-
 @app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
 
-
-@app.route('/api/analytics', methods=['GET'])
+@app.route('/api/analytics', methods=['GET', 'OPTIONS'])
 def get_analytics():
+    if request.method == 'OPTIONS':
+        return '', 200
+
     try:
         params = {
             'country_filter': request.args.get('country_filter'),
@@ -53,6 +52,7 @@ def get_analytics():
             'ip_filter': request.args.get('ip_filter'),
             'isp_filter': request.args.get('isp_filter'),
         }
+
         # Convert empty strings to None and parse dates to ISO8601 strings
         for k, v in params.items():
             if not v:
@@ -76,13 +76,16 @@ def get_analytics():
             data['stats'] = stats
 
         return jsonify(data)
+
     except Exception as e:
         app.logger.error(f"Error in /api/analytics: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-
-@app.route('/track', methods=['POST'])
+@app.route('/track', methods=['POST', 'OPTIONS'])
 def track():
+    if request.method == 'OPTIONS':
+        return '', 200
+
     try:
         data = request.get_json(force=True)
         session_id = data.get("sessionId")
@@ -94,6 +97,7 @@ def track():
 
         ua_string = data.get("userAgent", "")
         ua = parse(ua_string)
+
         if ua.is_mobile:
             device_type = "Mobile"
         elif ua.is_tablet:
@@ -161,7 +165,36 @@ def track():
         app.logger.error(f"Error in /track: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
+@app.route('/log/time', methods=['POST', 'OPTIONS'])
+def log_time():
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    try:
+        data = request.get_json(force=True)
+        session_id = data.get("sessionId")
+        if not session_id:
+            return jsonify({"error": "Missing sessionId"}), 400
+
+        time_spent_seconds = data.get("timeSpentSeconds", 0)
+        if time_spent_seconds is not None:
+            time_spent_seconds = max(0, min(int(time_spent_seconds), 86400))
+
+        # Update the visitor record with time spent
+        update_data = {
+            "time_spent_seconds": time_spent_seconds
+        }
+
+        supabase.table('visitors') \
+            .update(update_data) \
+            .eq('session_id', session_id) \
+            .execute()
+
+        return jsonify({"success": True, "time_logged": time_spent_seconds}), 200
+
+    except Exception as e:
+        app.logger.error(f"Error in /log/time: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
-
