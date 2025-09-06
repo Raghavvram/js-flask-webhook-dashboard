@@ -38,14 +38,16 @@ def dashboard():
 def get_analytics():
     try:
         params = {
-            'country_filter': request.args.get('country_filter') or None,
-            'start_date_filter': request.args.get('start_date_filter') or None,
-            'end_date_filter': request.args.get('end_date_filter') or None,
-            'visitor_type_filter': request.args.get('visitor_type_filter') or None,
-            'device_filter': request.args.get('device_filter') or None,
-            'url_filter': request.args.get('url_filter') or None,
-            'browser_filter': request.args.get('browser_filter') or None,
-            'ip_filter': request.args.get('ip_filter') or None
+            'country_filter':       request.args.get('country_filter') or None,
+            'start_date_filter':    request.args.get('start_date_filter') or None,
+            'end_date_filter':      request.args.get('end_date_filter') or None,
+            'visitor_type_filter':  request.args.get('visitor_type_filter') or None,
+            'device_filter':        request.args.get('device_filter') or None,
+            'url_filter':           request.args.get('url_filter') or None,
+            'browser_filter':       request.args.get('browser_filter') or None,
+            'ip_filter':            request.args.get('ip_filter') or None,
+            'region_filter':        request.args.get('region_filter') or None,
+            'isp_filter':           request.args.get('isp_filter') or None,
         }
         response = supabase.rpc('get_filtered_analytics_visual', params).execute()
         data = response.data or {}
@@ -59,6 +61,7 @@ def get_analytics():
     except Exception as e:
         app.logger.error(f"AN ERROR OCCURRED IN /api/analytics: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/track', methods=['POST'])
 def track():
