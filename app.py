@@ -1,9 +1,11 @@
 import os
-import json
+from datetime import datetime
+from dateutil.parser import parse as date_parse
+
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
-from supabase import create_client, Client
 from flask_cors import CORS
+from supabase import create_client, Client
 from user_agents import parse
 import pycountry
 
@@ -15,6 +17,7 @@ CORS(app)
 supabase_url = os.environ.get("SUPABASE_URL")
 supabase_key = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(supabase_url, supabase_key)
+
 
 def get_country_code(country_name):
     if not country_name or country_name.lower() == 'unknown':
@@ -30,27 +33,37 @@ def get_country_code(country_name):
         return None
     return None
 
+
 @app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
+
 
 @app.route('/api/analytics', methods=['GET'])
 def get_analytics():
     try:
         params = {
-            'country_filter':       request.args.get('country_filter'),
-            'start_date_filter':    request.args.get('start_date_filter'),
-            'end_date_filter':      request.args.get('end_date_filter'),
-            'visitor_type_filter':  request.args.get('visitor_type_filter'),
-            'device_filter':        request.args.get('device_filter'),
-            'url_filter':           request.args.get('url_filter'),
-            'browser_filter':       request.args.get('browser_filter'),
-            'ip_filter':            request.args.get('ip_filter'),
-            'isp_filter':           request.args.get('isp_filter'),
+            'country_filter': request.args.get('country_filter'),
+            'start_date_filter': request.args.get('start_date_filter'),
+            'end_date_filter': request.args.get('end_date_filter'),
+            'visitor_type_filter': request.args.get('visitor_type_filter'),
+            'device_filter': request.args.get('device_filter'),
+            'url_filter': request.args.get('url_filter'),
+            'browser_filter': request.args.get('browser_filter'),
+            'ip_filter': request.args.get('ip_filter'),
+            'isp_filter': request.args.get('isp_filter'),
         }
+        # Convert empty strings to None and parse dates to ISO8601 strings
         for k, v in params.items():
             if not v:
                 params[k] = None
+            else:
+                if k in ('start_date_filter', 'end_date_filter') and v is not None:
+                    try:
+                        dt = date_parse(v)
+                        params[k] = dt.isoformat()
+                    except Exception:
+                        params[k] = None
 
         response = supabase.rpc('get_filtered_analytics_visual', params).execute()
         data = response.data or {}
@@ -66,6 +79,7 @@ def get_analytics():
     except Exception as e:
         app.logger.error(f"Error in /api/analytics: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/track', methods=['POST'])
 def track():
@@ -87,26 +101,45 @@ def track():
         else:
             device_type = "Desktop"
 
-        country      = norm(data.get("country"))
-        city         = norm(data.get("city"))
-        isp          = norm(data.get("isp"))
-        public_ip    = norm(data.get("publicIp"))
+        country = norm(data.get("country"))
+        city = norm(data.get("city"))
+        isp = norm(data.get("isp"))
+        public_ip = norm(data.get("publicIp"))
         country_code = data.get("countryCode") or get_country_code(country)
-        first_seen   = data.get("timestamp")
+
+        # Parse timestamp safely: convert milliseconds timestamp to ISO8601 string if it looks like milliseconds
+        first_seen_raw = data.get("timestamp")
+        first_seen = None
+        if first_seen_raw is not None:
+            try:
+                # If numeric and very large, treat as milliseconds
+                if isinstance(first_seen_raw, (int, float)) or (isinstance(first_seen_raw, str) and first_seen_raw.isdigit()):
+                    ts = int(first_seen_raw)
+                    # If ts looks like ms timestamp, convert to seconds
+                    if ts > 10**12:  # Likely microseconds, too large, divide
+                        ts = ts // 1000
+                    if ts > 10**10:  # Too large, divide by 1000 more
+                        ts = ts // 1000
+                    first_seen = datetime.utcfromtimestamp(ts / 1000 if ts > 10**9 else ts).isoformat()
+                else:
+                    # Try parsing ISO string
+                    first_seen = date_parse(str(first_seen_raw)).isoformat()
+            except Exception:
+                first_seen = None
 
         visitor_record = {
-            "session_id":        session_id,
-            "public_ip":         public_ip,
-            "country":           country,
-            "country_code":      country_code,
-            "city":              city,
-            "isp":               isp,
-            "page_visited":      data.get("pageVisited"),
-            "user_agent":        ua_string,
-            "device_type":       device_type,
-            "browser":           ua.browser.family,
-            "operating_system":  ua.os.family,
-            "first_seen":        first_seen,
+            "session_id": session_id,
+            "public_ip": public_ip,
+            "country": country,
+            "country_code": country_code,
+            "city": city,
+            "isp": isp,
+            "page_visited": data.get("pageVisited"),
+            "user_agent": ua_string,
+            "device_type": device_type,
+            "browser": ua.browser.family,
+            "operating_system": ua.os.family,
+            "first_seen": first_seen,
             "time_spent_seconds": None,
         }
 
@@ -115,6 +148,7 @@ def track():
             ts = max(0, min(ts, 86400))
             visitor_record["time_spent_seconds"] = ts
 
+        # Remove keys with None to avoid sending null values
         visitor_record = {k: v for k, v in visitor_record.items() if v is not None}
 
         supabase.table('visitors') \
@@ -122,7 +156,12 @@ def track():
             .execute()
 
         return jsonify({"success": True}), 201
+
     except Exception as e:
         app.logger.error(f"Error in /track: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
 
