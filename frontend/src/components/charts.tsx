@@ -354,9 +354,8 @@ export function TopPagesChart({ data }: { data: any }) {
             datalabels: {
                 anchor: 'end' as const,
                 align: 'end' as const,
-                formatter: (value: any, context: any) => {
-                    const url = context.chart.data.labels[context.dataIndex];
-                    return `${url} (${value})`;
+                formatter: (value: any) => {
+                    return value;
                 },
                 color: '#e6e8eb',
             },
