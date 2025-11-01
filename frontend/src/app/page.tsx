@@ -49,7 +49,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
-      <main className="max-w-7xl mx-auto p-8 pt-[7rem]">
+      <main className="max-w-7xl mx-auto p-8">
         <StatsGrid stats={data?.stats} />
         <Filters onFiltersChange={handleFiltersChange} meta={data?.meta} />
         

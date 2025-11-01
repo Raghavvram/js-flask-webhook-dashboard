@@ -4,7 +4,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 export function Header() {
   return (
-    <header className="bg-secondary border-b p-8 fixed top-0 z-50 w-full">
+    <header className="bg-secondary border-b p-8">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
