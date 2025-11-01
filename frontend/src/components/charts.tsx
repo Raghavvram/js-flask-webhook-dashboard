@@ -13,6 +13,7 @@ import {
   BarElement,
 } from "chart.js";
 import { useTheme } from "next-themes";
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 ChartJS.register(
   CategoryScale,
@@ -21,7 +22,8 @@ ChartJS.register(
   Tooltip,
   Legend,
   ArcElement,
-  BarElement
+  BarElement,
+  ChartDataLabels
 );
 
 const countryCodeMapping: { [key: string]: string } = {
@@ -312,6 +314,47 @@ export function CityDistributionChart({ data }: { data: any }) {
     <Card>
       <CardHeader>
         <CardTitle>🏙️ City Distribution</CardTitle>
+      </CardHeader>
+      <CardContent className="h-[400px] w-full">
+        <Bar data={chartData} options={options} />
+      </CardContent>
+    </Card>
+  );
+}
+
+export function TopPagesChart({ data }: { data: any }) {
+    const chartData = {
+        labels: data?.map((d: any) => d.page_visited) || [],
+        datasets: [
+            {
+                data: data?.map((d: any) => d.count) || [],
+                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                borderRadius: 4,
+            },
+        ],
+    };
+
+    const options = {
+        indexAxis: 'y' as const,
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false,
+            },
+        },
+        scales: {
+            y: { beginAtZero: true, ticks: { color: '#9ca3af', align: 'start' }, grid: { display: false } },
+            x: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { display: false } },
+        },
+        barPercentage: 0.6,
+        categoryPercentage: 0.8,
+    };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>📄 Top Pages</CardTitle>
       </CardHeader>
       <CardContent className="h-[400px] w-full">
         <Bar data={chartData} options={options} />
