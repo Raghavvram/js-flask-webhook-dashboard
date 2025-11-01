@@ -100,6 +100,12 @@ BEGIN
           SELECT city, COUNT(*) AS count FROM filtered WHERE city IS NOT NULL
           GROUP BY city ORDER BY count DESC LIMIT 10
         ) t
+      ), '[]'),
+      'by_page', COALESCE((
+        SELECT json_agg(row_to_json(t)) FROM (
+          SELECT page_visited, COUNT(*) AS count FROM filtered WHERE page_visited IS NOT NULL
+          GROUP BY page_visited ORDER BY count DESC LIMIT 10
+        ) t
       ), '[]')
     ),
     'meta', json_build_object(

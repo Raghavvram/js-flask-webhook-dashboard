@@ -44,7 +44,7 @@ export function TrafficTimelineChart({ data }: { data: any[] }) {
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    
                     <XAxis dataKey="date" stroke="#9ca3af" tickFormatter={(tick) => new Date(tick).toLocaleDateString()} />
                     <YAxis stroke="#9ca3af" />
                     <Tooltip content={<CustomTooltip />} />
