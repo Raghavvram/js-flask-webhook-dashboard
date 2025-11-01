@@ -115,7 +115,19 @@ Follow these instructions to set up and run the project on your local machine.
                 'visitor_list', COALESCE((SELECT json_agg(v) FROM (SELECT * FROM filtered_visitors ORDER BY created_at DESC LIMIT 100) v), '[]'),
                 'charts', json_build_object(
                     'by_country', COALESCE((SELECT json_agg(t) FROM (SELECT country_code as id, COUNT(*) as value FROM filtered_visitors WHERE country_code IS NOT NULL GROUP BY country_code ORDER BY value DESC) t), '[]'),
-                    'by_date', COALESCE((SELECT json_agg(d) FROM (SELECT created_at::date AS date, COUNT(*) AS count FROM filtered_visitors GROUP BY date ORDER BY date ASC) d), '[]'),
+                    'by_date', COALESCE((
+                        SELECT json_agg(d)
+                        FROM (
+                            SELECT
+                                created_at::date AS date,
+                                COUNT(*) AS count,
+                                COUNT(DISTINCT public_ip) AS unique_visitors,
+                                COUNT(*) - COUNT(DISTINCT public_ip) AS returning_visitors
+                            FROM filtered_visitors
+                            GROUP BY date
+                            ORDER BY date ASC
+                        ) d
+                    ), '[]'),
                     'by_device', COALESCE((SELECT json_agg(t) FROM (SELECT device_type, COUNT(*) as count FROM filtered_visitors WHERE device_type IS NOT NULL GROUP BY device_type ORDER BY count DESC) t), '[]'),
                     'by_browser', COALESCE((SELECT json_agg(t) FROM (SELECT browser, COUNT(*) as count FROM filtered_visitors WHERE browser IS NOT NULL GROUP BY browser ORDER BY count DESC LIMIT 5) t), '[]')
                 ),

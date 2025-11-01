@@ -1,15 +1,34 @@
 
+
 "use client";
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-gray-800 text-white p-4 rounded-md border border-gray-700">
+        <p className="label">{`${new Date(data.date).toLocaleDateString()} ${new Date(data.date).toLocaleTimeString()}`}</p>
+        <p className="intro">{`Total Visitors: ${data.count}`}</p>
+        <p className="intro">{`Unique Visitors: ${data.uniqueVisitors}`}</p>
+        <p className="intro">{`Returning Visitors: ${data.returningVisitors}`}</p>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 export function TrafficTimelineChart({ data }: { data: any[] }) {
 
   const chartData = data?.map(item => ({
-    date: new Date(item.date).toLocaleDateString(),
+    date: new Date(item.date),
     count: item.count,
-  })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    uniqueVisitors: item.unique_visitors || 0,
+    returningVisitors: item.returning_visitors || 0,
+  })).sort((a, b) => a.date.getTime() - b.date.getTime());
 
   return (
     <Card>
@@ -26,15 +45,9 @@ export function TrafficTimelineChart({ data }: { data: any[] }) {
                         </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="date" stroke="#9ca3af" />
+                    <XAxis dataKey="date" stroke="#9ca3af" tickFormatter={(tick) => new Date(tick).toLocaleDateString()} />
                     <YAxis stroke="#9ca3af" />
-                    <Tooltip
-                        contentStyle={{
-                            backgroundColor: '#1a1f2e',
-                            border: '1px solid #374151',
-                            color: '#e6e8eb'
-                        }}
-                    />
+                    <Tooltip content={<CustomTooltip />} />
                     <Area type="monotone" dataKey="count" stroke="#10b981" fillOpacity={1} fill="url(#colorCount)" />
                 </AreaChart>
             </ResponsiveContainer>
