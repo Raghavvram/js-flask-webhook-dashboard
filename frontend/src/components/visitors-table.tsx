@@ -41,7 +41,6 @@ export function VisitorsTable({ visitors }: VisitorsTableProps) {
               <TableHead>Page Visited</TableHead>
               <TableHead>Session Time</TableHead>
               <TableHead>IP Address</TableHead>
-              <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody id="visitorsTableBody">
@@ -91,15 +90,12 @@ export function VisitorsTable({ visitors }: VisitorsTableProps) {
                     <TableCell>
                       <code>{visitor.public_ip || "-"}</code>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={statusClass as "default" | "secondary" | "destructive" | "outline" | null | undefined}>{status}</Badge>
-                    </TableCell>
                   </TableRow>
                 );
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={8} className="text-center">
+                <TableCell colSpan={7} className="text-center">
                   Loading visitor data...
                 </TableCell>
               </TableRow>
