@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpCircle } from "lucide-react";
 
 // This is a placeholder for the actual data type
 type Visitor = any;
@@ -60,9 +62,19 @@ export function VisitorsTable({ visitors }: VisitorsTableProps) {
   };
 
   return (
-    <Card>
+    <Card style={{ position: "relative" }}>
       <CardHeader>
-        <CardTitle>👤 Recent Visitor Activity</CardTitle>
+        <CardTitle className="flex items-center gap-1">
+          👤 Recent Visitor Activity
+          <Tooltip>
+            <TooltipTrigger>
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>A table showing the most recent visitors to your website.</p>
+            </TooltipContent>
+          </Tooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Table>

@@ -1,6 +1,4 @@
 
-"use client";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useRef } from "react";
 import { Doughnut, Bar } from "react-chartjs-2";
@@ -15,6 +13,8 @@ import {
   BarElement,
 } from "chart.js";
 import { useTheme } from "next-themes";
+import { Tooltip as UITooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpCircle } from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -141,8 +141,19 @@ export function GlobalVisitorChart({ data }: { data: any }) {
 
       const isDark = theme === 'dark';
 
+      const processedData = data
+        ?.map((item: any) => ({
+          id: item.id,
+          name: countryCodeMapping[item.id] || item.id,
+          value: item.value || 0,
+          unique_visitors: item.unique_visitors || 0,
+          returning_visitors: item.returning_visitors || 0,
+        }))
+        .filter((item: any) => item.value > 0 && item.id);
+      polygonSeries.data.setAll(processedData || []);
+
       polygonSeries.mapPolygons.template.setAll({
-        tooltipText: "{name}: {value} visitors",
+        tooltipText: "{name}:\nTotal Visitors: {value}\nUnique Visitors: {unique_visitors}\nReturning Visitors: {returning_visitors}",
         interactive: true,
         fill: isDark ? am5.color(0x252d3d) : am5.color(0xeeeeee),
         stroke: isDark ? am5.color(0x374151) : am5.color(0xbbbbbb),
@@ -166,25 +177,6 @@ export function GlobalVisitorChart({ data }: { data: any }) {
 
       chart.children.push(am5map.ZoomControl.new(root, {}));
 
-      const processedData = data
-        ?.map((item: any) => ({
-          id: item.id,
-          name: countryCodeMapping[item.id] || item.id,
-          value: item.value || 0,
-          unique_visitors: item.unique_visitors || 0,
-          returning_visitors: item.returning_visitors || 0,
-        }))
-        .filter((item: any) => item.value > 0 && item.id);
-      polygonSeries.data.setAll(processedData || []);
-
-      polygonSeries.mapPolygons.template.setAll({
-        tooltipText: "{name}:\nTotal Visitors: {value}\nUnique Visitors: {unique_visitors}\nReturning Visitors: {returning_visitors}",
-        interactive: true,
-        fill: isDark ? am5.color(0x252d3d) : am5.color(0xeeeeee),
-        stroke: isDark ? am5.color(0x374151) : am5.color(0xbbbbbb),
-        strokeWidth: 0.5,
-      });
-
       chartRef.current = root;
     })();
 
@@ -194,9 +186,19 @@ export function GlobalVisitorChart({ data }: { data: any }) {
   }, [theme, data]);
 
   return (
-    <Card>
+    <Card style={{ position: "relative" }}>
       <CardHeader>
-        <CardTitle>🌍 Global Visitor Distribution</CardTitle>
+        <CardTitle className="flex items-center gap-1">
+          🌍 Global Visitor Distribution
+          <UITooltip>
+            <TooltipTrigger>
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>A world map showing the distribution of visitors by country.</p>
+            </TooltipContent>
+          </UITooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div ref={chartDiv} style={{ width: "100%", height: "600px" }}></div>
@@ -230,9 +232,19 @@ function DeviceAnalyticsChart({ data }: { data: any }) {
     };
 
   return (
-    <Card>
+    <Card style={{ position: "relative" }}>
       <CardHeader>
-        <CardTitle>📱 Device Analytics</CardTitle>
+        <CardTitle className="flex items-center gap-1">
+          📱 Device Analytics
+          <UITooltip>
+            <TooltipTrigger>
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>A doughnut chart showing the distribution of visitors by device type.</p>
+            </TooltipContent>
+          </UITooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent className="h-[400px] w-full">
         <Doughnut data={chartData} options={options} />
@@ -268,9 +280,19 @@ function BrowserDistributionChart({ data }: { data: any }) {
     };
 
   return (
-    <Card>
+    <Card style={{ position: "relative" }}>
       <CardHeader>
-        <CardTitle>🌐 Browser Distribution</CardTitle>
+        <CardTitle className="flex items-center gap-1">
+          🌐 Browser Distribution
+          <UITooltip>
+            <TooltipTrigger>
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>A bar chart showing the distribution of visitors by browser.</p>
+            </TooltipContent>
+          </UITooltip>
+        </CardTitle>
       </CardHeader>
       <CardContent className="h-[400px] w-full">
         <Bar data={chartData} options={options} />
