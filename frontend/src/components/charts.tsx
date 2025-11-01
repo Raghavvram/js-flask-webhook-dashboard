@@ -292,6 +292,7 @@ export function CityDistributionChart({ data }: { data: any }) {
     };
 
     const options = {
+        indexAxis: 'y' as const,
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -301,8 +302,10 @@ export function CityDistributionChart({ data }: { data: any }) {
         },
         scales: {
             y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
-            x: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+            x: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
         },
+        barPercentage: 0.6,
+        categoryPercentage: 0.8,
     };
 
   return (
