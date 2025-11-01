@@ -169,11 +169,19 @@ export function GlobalVisitorChart({ data }: { data: any }) {
         {
           target: polygonSeries.mapPolygons.template,
           key: "fill",
-          min: am5.color(0x3b82f6, 0.5),
-          max: am5.color(0x10b981, 0.5),
+          min: am5.color(0x3b82f6),
+          max: am5.color(0x10b981),
           dataField: "value",
           logarithmic: false,
         },
+        {
+            target: polygonSeries.mapPolygons.template,
+            key: "fillOpacity",
+            min: 0.5,
+            max: 0.5,
+            dataField: "value",
+            logarithmic: false,
+        }
       ]);
 
       chart.children.push(am5map.ZoomControl.new(root, {}));
@@ -344,8 +352,8 @@ export function TopPagesChart({ data }: { data: any }) {
                 display: false,
             },
             datalabels: {
-                anchor: 'end',
-                align: 'end',
+                anchor: 'end' as const,
+                align: 'end' as const,
                 formatter: (value: any, context: any) => {
                     const url = context.chart.data.labels[context.dataIndex];
                     return `${url} (${value})`;
