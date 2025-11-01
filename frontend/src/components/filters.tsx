@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { Filter, RotateCw, Search } from "lucide-react";
 
 export function Filters({ onFiltersChange, meta }: { onFiltersChange: (filters: any) => void, meta: any }) {
   const [country, setCountry] = useState("all");
@@ -46,7 +47,7 @@ export function Filters({ onFiltersChange, meta }: { onFiltersChange: (filters: 
   return (
     <Card className="mb-12">
       <CardHeader>
-        <CardTitle>🔍 Advanced Filters</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Filter className="h-5 w-5" /> Advanced Filters</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-4">
@@ -110,10 +111,10 @@ export function Filters({ onFiltersChange, meta }: { onFiltersChange: (filters: 
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={handleReset}>
-            🔄 Reset Filters
+            <RotateCw className="h-4 w-4 mr-2" /> Reset Filters
           </Button>
           <Button onClick={handleApply}>
-            🔍 Apply Filters
+            <Search className="h-4 w-4 mr-2" /> Apply Filters
           </Button>
         </div>
       </CardContent>

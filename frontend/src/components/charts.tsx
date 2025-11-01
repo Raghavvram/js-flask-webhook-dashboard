@@ -14,6 +14,7 @@ import {
 } from "chart.js";
 import { useTheme } from "next-themes";
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { Globe, Smartphone, Building, FileText } from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -168,8 +169,8 @@ export function GlobalVisitorChart({ data }: { data: any }) {
         {
           target: polygonSeries.mapPolygons.template,
           key: "fill",
-          min: am5.color(0x3b82f6),
-          max: am5.color(0x10b981),
+          min: am5.color(0x3b82f6, 0.5),
+          max: am5.color(0x10b981, 0.5),
           dataField: "value",
           logarithmic: false,
         },
@@ -188,7 +189,7 @@ export function GlobalVisitorChart({ data }: { data: any }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>🌍 Global Visitor Distribution</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> Global Visitor Distribution</CardTitle>
       </CardHeader>
       <CardContent>
         <div ref={chartDiv} style={{ width: "100%", height: "600px" }}></div>
@@ -203,7 +204,7 @@ function DeviceAnalyticsChart({ data }: { data: any }) {
         datasets: [
             {
                 data: data?.map((d: any) => d.count) || [],
-                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'],
+                backgroundColor: ['rgba(59, 130, 246, 0.5)', 'rgba(16, 185, 129, 0.5)', 'rgba(245, 158, 11, 0.5)', 'rgba(239, 68, 68, 0.5)', 'rgba(139, 92, 246, 0.5)', 'rgba(236, 72, 153, 0.5)'],
                 borderColor: '#1a1f2e',
                 borderWidth: 2,
             },
@@ -224,7 +225,7 @@ function DeviceAnalyticsChart({ data }: { data: any }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>📱 Device Analytics</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Smartphone className="h-5 w-5" /> Device Analytics</CardTitle>
       </CardHeader>
       <CardContent className="h-[400px] w-full">
         <Doughnut data={chartData} options={options} />
@@ -239,7 +240,7 @@ function BrowserDistributionChart({ data }: { data: any }) {
         datasets: [
             {
                 data: data?.map((d: any) => d.count) || [],
-                backgroundColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.5)',
                 borderRadius: 4,
             },
         ],
@@ -262,7 +263,7 @@ function BrowserDistributionChart({ data }: { data: any }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>🌐 Browser Distribution</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> Browser Distribution</CardTitle>
       </CardHeader>
       <CardContent className="h-[400px] w-full">
         <Bar data={chartData} options={options} />
@@ -313,7 +314,7 @@ export function CityDistributionChart({ data }: { data: any }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>🏙️ City Distribution</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5" /> City Distribution</CardTitle>
       </CardHeader>
       <CardContent className="h-[400px] w-full">
         <Bar data={chartData} options={options} />
@@ -342,9 +343,18 @@ export function TopPagesChart({ data }: { data: any }) {
             legend: {
                 display: false,
             },
+            datalabels: {
+                anchor: 'end',
+                align: 'end',
+                formatter: (value: any, context: any) => {
+                    const url = context.chart.data.labels[context.dataIndex];
+                    return `${url} (${value})`;
+                },
+                color: '#e6e8eb',
+            },
         },
         scales: {
-            y: { beginAtZero: true, ticks: { color: '#9ca3af', align: 'start' }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { display: false } },
             x: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { display: false } },
         },
         barPercentage: 0.6,
@@ -354,7 +364,7 @@ export function TopPagesChart({ data }: { data: any }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>📄 Top Pages</CardTitle>
+        <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Top Pages</CardTitle>
       </CardHeader>
       <CardContent className="h-[400px] w-full">
         <Bar data={chartData} options={options} />

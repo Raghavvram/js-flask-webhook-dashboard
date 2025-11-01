@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo } from "react";
+import { Users } from "lucide-react";
 
 // This is a placeholder for the actual data type
 type Visitor = any;
@@ -62,7 +63,7 @@ export function VisitorsTable({ visitors }: VisitorsTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>👤 Recent Visitor Activity</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Recent Visitor Activity</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>

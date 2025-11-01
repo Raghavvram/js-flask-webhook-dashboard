@@ -1,9 +1,8 @@
 
 
-"use client";
-
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LineChart } from "lucide-react";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -33,7 +32,7 @@ export function TrafficTimelineChart({ data }: { data: any[] }) {
   return (
     <Card>
         <CardHeader>
-            <CardTitle>📈 Traffic Timeline</CardTitle>
+            <CardTitle className="flex items-center gap-2"><LineChart className="h-5 w-5" /> Traffic Timeline</CardTitle>
         </CardHeader>
         <CardContent>
             <ResponsiveContainer width="100%" height={400}>
@@ -44,7 +43,6 @@ export function TrafficTimelineChart({ data }: { data: any[] }) {
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                         </linearGradient>
                     </defs>
-                    
                     <XAxis dataKey="date" stroke="#9ca3af" tickFormatter={(tick) => new Date(tick).toLocaleDateString()} />
                     <YAxis stroke="#9ca3af" />
                     <Tooltip content={<CustomTooltip />} />

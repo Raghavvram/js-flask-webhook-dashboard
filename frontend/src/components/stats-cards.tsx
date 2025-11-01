@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Users, UserCheck, UserX, Clock } from "lucide-react";
 
 interface StatCardProps {
   title: string;
@@ -34,22 +35,22 @@ export function StatsGrid({ stats }: { stats: any }) {
       <StatCard
         title="Total Visitors"
         value={stats?.total_visitors || "-"}
-        icon={<span className="text-2xl">👥</span>}
+        icon={<Users className="h-6 w-6 text-muted-foreground" />}
       />
       <StatCard
         title="Unique Visitors"
         value={stats?.unique_visitors || "-"}
-        icon={<span className="text-2xl">🆔</span>}
+        icon={<UserCheck className="h-6 w-6 text-muted-foreground" />}
       />
       <StatCard
         title="Returning Visitors"
         value={stats?.repeated_visitors || "-"}
-        icon={<span className="text-2xl">🔄</span>}
+        icon={<UserX className="h-6 w-6 text-muted-foreground" />}
       />
       <StatCard
         title="Avg. Session (sec)"
         value={stats?.avg_time_on_page || "-"}
-        icon={<span className="text-2xl">⏱️</span>}
+        icon={<Clock className="h-6 w-6 text-muted-foreground" />}
       />
     </div>
   );
