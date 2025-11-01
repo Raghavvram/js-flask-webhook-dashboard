@@ -94,6 +94,12 @@ BEGIN
           SELECT browser, COUNT(*) AS count FROM filtered WHERE browser IS NOT NULL
           GROUP BY browser ORDER BY count DESC LIMIT 5
         ) t
+      ), '[]'),
+      'by_city', COALESCE((
+        SELECT json_agg(row_to_json(t)) FROM (
+          SELECT city, COUNT(*) AS count FROM filtered WHERE city IS NOT NULL
+          GROUP BY city ORDER BY count DESC LIMIT 10
+        ) t
       ), '[]')
     ),
     'meta', json_build_object(

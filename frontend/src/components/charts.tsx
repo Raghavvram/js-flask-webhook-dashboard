@@ -278,3 +278,41 @@ export function AnalyticsChartsGrid({ chartsData }: { chartsData: any }) {
     </div>
   );
 }
+
+export function CityDistributionChart({ data }: { data: any }) {
+    const chartData = {
+        labels: data?.map((d: any) => d.city) || [],
+        datasets: [
+            {
+                data: data?.map((d: any) => d.count) || [],
+                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                borderRadius: 4,
+            },
+        ],
+    };
+
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false,
+            },
+        },
+        scales: {
+            y: { beginAtZero: true, ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+            x: { ticks: { color: '#9ca3af' }, grid: { color: '#374151' } },
+        },
+    };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>🏙️ City Distribution</CardTitle>
+      </CardHeader>
+      <CardContent className="h-[400px] w-full">
+        <Bar data={chartData} options={options} />
+      </CardContent>
+    </Card>
+  );
+}

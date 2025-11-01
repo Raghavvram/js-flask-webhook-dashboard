@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Header } from "@/components/header";
 import { StatsGrid } from "@/components/stats-cards";
 import { Filters } from "@/components/filters";
-import { AnalyticsChartsGrid, GlobalVisitorChart } from "@/components/charts";
+import { AnalyticsChartsGrid, GlobalVisitorChart, CityDistributionChart } from "@/components/charts";
 import { VisitorsTable } from "@/components/visitors-table";
 import { TrafficTimelineChart } from "@/components/traffic-timeline-chart";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,7 @@ export default function DashboardPage() {
             <Button variant={activeTab === 'analytics' ? 'default' : 'outline'} onClick={() => setActiveTab('analytics')}>Analytics</Button>
             <Button variant={activeTab === 'timeline' ? 'default' : 'outline'} onClick={() => setActiveTab('timeline')}>Traffic Timeline</Button>
             <Button variant={activeTab === 'global' ? 'default' : 'outline'} onClick={() => setActiveTab('global')}>Global Visitor Distribution</Button>
+            <Button variant={activeTab === 'city' ? 'default' : 'outline'} onClick={() => setActiveTab('city')}>City Distribution</Button>
             <Button variant={activeTab === 'visitors' ? 'default' : 'outline'} onClick={() => setActiveTab('visitors')}>Recent Visitor Activity</Button>
         </div>
 
@@ -64,6 +65,7 @@ export default function DashboardPage() {
             {activeTab === 'analytics' && <AnalyticsChartsGrid chartsData={data?.charts} />}
             {activeTab === 'timeline' && <TrafficTimelineChart data={data?.charts?.by_date} />}
             {activeTab === 'global' && <GlobalVisitorChart data={data?.charts?.by_country} />}
+            {activeTab === 'city' && <CityDistributionChart data={data?.charts?.by_city} />}
             {activeTab === 'visitors' && <VisitorsTable visitors={data?.visitor_list || []} />}
         </div>
 
