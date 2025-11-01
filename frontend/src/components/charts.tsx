@@ -171,9 +171,19 @@ export function GlobalVisitorChart({ data }: { data: any }) {
           id: item.id,
           name: countryCodeMapping[item.id] || item.id,
           value: item.value || 0,
+          unique_visitors: item.unique_visitors || 0,
+          returning_visitors: item.returning_visitors || 0,
         }))
         .filter((item: any) => item.value > 0 && item.id);
       polygonSeries.data.setAll(processedData || []);
+
+      polygonSeries.mapPolygons.template.setAll({
+        tooltipText: "{name}:\nTotal Visitors: {value}\nUnique Visitors: {unique_visitors}\nReturning Visitors: {returning_visitors}",
+        interactive: true,
+        fill: isDark ? am5.color(0x252d3d) : am5.color(0xeeeeee),
+        stroke: isDark ? am5.color(0x374151) : am5.color(0xbbbbbb),
+        strokeWidth: 0.5,
+      });
 
       chartRef.current = root;
     })();

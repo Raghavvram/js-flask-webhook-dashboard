@@ -52,9 +52,17 @@ BEGIN
     'visitor_list', COALESCE((SELECT json_agg(r) FROM recent r), '[]'),
     'charts', json_build_object(
       'by_country', COALESCE((
-        SELECT json_agg(row_to_json(t)) FROM (
-          SELECT country_code AS id, COUNT(*) AS value FROM filtered WHERE country_code IS NOT NULL
-          GROUP BY country_code ORDER BY value DESC
+        SELECT json_agg(row_to_json(t))
+        FROM (
+            SELECT
+                country_code AS id,
+                COUNT(*) AS value,
+                COUNT(DISTINCT public_ip) AS unique_visitors,
+                COUNT(*) - COUNT(DISTINCT public_ip) AS returning_visitors
+            FROM filtered
+            WHERE country_code IS NOT NULL
+            GROUP BY country_code
+            ORDER BY value DESC
         ) t
       ), '[]'),
       'by_isp', COALESCE((
