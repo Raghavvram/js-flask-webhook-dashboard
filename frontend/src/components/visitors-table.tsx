@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useState, useMemo } from "react";
 
 // This is a placeholder for the actual data type
 type Visitor = any;
@@ -25,6 +26,39 @@ interface VisitorsTableProps {
 }
 
 export function VisitorsTable({ visitors }: VisitorsTableProps) {
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: string } | null>(null);
+
+  const sortedVisitors = useMemo(() => {
+    let sortableVisitors = [...visitors];
+    if (sortConfig !== null) {
+      sortableVisitors.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableVisitors;
+  }, [visitors, sortConfig]);
+
+  const requestSort = (key: string) => {
+    let direction = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIndicator = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return null;
+    }
+    return sortConfig.direction === 'ascending' ? ' 🔼' : ' 🔽';
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -34,18 +68,32 @@ export function VisitorsTable({ visitors }: VisitorsTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Timestamp</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Device</TableHead>
-              <TableHead>Browser</TableHead>
-              <TableHead>Page Visited</TableHead>
-              <TableHead>Session Time</TableHead>
-              <TableHead>IP Address</TableHead>
+              <TableHead onClick={() => requestSort('created_at')}>
+                Timestamp{getSortIndicator('created_at')}
+              </TableHead>
+              <TableHead onClick={() => requestSort('location')}>
+                Location{getSortIndicator('location')}
+              </TableHead>
+              <TableHead onClick={() => requestSort('device_type')}>
+                Device{getSortIndicator('device_type')}
+              </TableHead>
+              <TableHead onClick={() => requestSort('browser')}>
+                Browser{getSortIndicator('browser')}
+              </TableHead>
+              <TableHead onClick={() => requestSort('page_visited')}>
+                Page Visited{getSortIndicator('page_visited')}
+              </TableHead>
+              <TableHead onClick={() => requestSort('time_spent_seconds')}>
+                Session Time{getSortIndicator('time_spent_seconds')}
+              </TableHead>
+              <TableHead onClick={() => requestSort('public_ip')}>
+                IP Address{getSortIndicator('public_ip')}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody id="visitorsTableBody">
-            {visitors && visitors.length > 0 ? (
-              visitors.map((visitor, index) => {
+            {sortedVisitors && sortedVisitors.length > 0 ? (
+              sortedVisitors.map((visitor, index) => {
                 const createdAt = new Date(visitor.created_at);
                 const timeSpent = visitor.time_spent_seconds
                   ? `${visitor.time_spent_seconds}s`
@@ -56,26 +104,6 @@ export function VisitorsTable({ visitors }: VisitorsTableProps) {
                     : visitor.page_visited || "-";
                 const location =
                   [visitor.city, visitor.country].filter(Boolean).join(", ") || "-";
-
-                const now = new Date();
-                const minutesSinceCreation = (now.getTime() - createdAt.getTime()) / 1000 / 60;
-                const SESSION_TIMEOUT_MINUTES = 5;
-
-                let status, statusClass;
-                const hasTimeSpent =
-                  visitor.time_spent_seconds !== null &&
-                  typeof visitor.time_spent_seconds !== "undefined";
-
-                if (hasTimeSpent) {
-                  status = visitor.time_spent_seconds > 30 ? "Engaged" : "Brief";
-                  statusClass = "secondary";
-                } else if (minutesSinceCreation < SESSION_TIMEOUT_MINUTES) {
-                  status = "Active";
-                  statusClass = "default";
-                } else {
-                  status = "Ended";
-                  statusClass = "secondary";
-                }
 
                 return (
                   <TableRow key={index}>
