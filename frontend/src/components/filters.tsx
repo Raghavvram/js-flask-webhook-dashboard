@@ -13,8 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle } from "lucide-react";
 
 export function Filters({ onFiltersChange, meta }: { onFiltersChange: (filters: any) => void, meta: any }) {
   const [country, setCountry] = useState("all");
@@ -46,34 +44,14 @@ export function Filters({ onFiltersChange, meta }: { onFiltersChange: (filters: 
   };
 
   return (
-    <Card className="mb-12" style={{ position: "relative" }}>
+    <Card className="mb-12">
       <CardHeader>
-        <CardTitle className="flex items-center gap-1">
-          🔍 Advanced Filters
-          <Tooltip>
-            <TooltipTrigger>
-              <HelpCircle className="h-4 w-4 text-muted-foreground" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Refine your analytics with these advanced filters.</p>
-            </TooltipContent>
-          </Tooltip>
-        </CardTitle>
+        <CardTitle>🔍 Advanced Filters</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-4">
           <div className="grid gap-2">
-            <Label htmlFor="countryFilter" className="flex items-center gap-1">
-              Country
-              <Tooltip>
-                <TooltipTrigger>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Filter visitors by country.</p>
-                </TooltipContent>
-              </Tooltip>
-            </Label>
+            <Label htmlFor="countryFilter">Country</Label>
             <Select value={country} onValueChange={setCountry}>
               <SelectTrigger id="countryFilter">
                 <SelectValue placeholder="All Countries" />
@@ -85,17 +63,7 @@ export function Filters({ onFiltersChange, meta }: { onFiltersChange: (filters: 
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="deviceFilter" className="flex items-center gap-1">
-              Device Type
-              <Tooltip>
-                <TooltipTrigger>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Filter visitors by device type (e.g., Desktop, Mobile).</p>
-                </TooltipContent>
-              </Tooltip>
-            </Label>
+            <Label htmlFor="deviceFilter">Device Type</Label>
             <Select value={device} onValueChange={setDevice}>
               <SelectTrigger id="deviceFilter">
                 <SelectValue placeholder="All Devices" />
@@ -107,17 +75,7 @@ export function Filters({ onFiltersChange, meta }: { onFiltersChange: (filters: 
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="browserFilter" className="flex items-center gap-1">
-              Browser
-              <Tooltip>
-                <TooltipTrigger>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Filter visitors by browser.</p>
-                </TooltipContent>
-              </Tooltip>
-            </Label>
+            <Label htmlFor="browserFilter">Browser</Label>
             <Select value={browser} onValueChange={setBrowser}>
               <SelectTrigger id="browserFilter">
                 <SelectValue placeholder="All Browsers" />
@@ -129,17 +87,7 @@ export function Filters({ onFiltersChange, meta }: { onFiltersChange: (filters: 
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="visitorTypeFilter" className="flex items-center gap-1">
-              Visitor Type
-              <Tooltip>
-                <TooltipTrigger>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Filter by unique or returning visitors.</p>
-                </TooltipContent>
-              </Tooltip>
-            </Label>
+            <Label htmlFor="visitorTypeFilter">Visitor Type</Label>
             <Select value={visitorType} onValueChange={setVisitorType}>
               <SelectTrigger id="visitorTypeFilter">
                 <SelectValue />
@@ -152,31 +100,11 @@ export function Filters({ onFiltersChange, meta }: { onFiltersChange: (filters: 
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="startDateFilter" className="flex items-center gap-1">
-              Start Date
-              <Tooltip>
-                <TooltipTrigger>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>The start of the date range.</p>
-                </TooltipContent>
-              </Tooltip>
-            </Label>
+            <Label htmlFor="startDateFilter">Start Date</Label>
             <Input type="date" id="startDateFilter" value={startDate} onChange={e => setStartDate(e.target.value)} />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="endDateFilter" className="flex items-center gap-1">
-              End Date
-              <Tooltip>
-                <TooltipTrigger>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>The end of the date range.</p>
-                </TooltipContent>
-              </Tooltip>
-            </Label>
+            <Label htmlFor="endDateFilter">End Date</Label>
             <Input type="date" id="endDateFilter" value={endDate} onChange={e => setEndDate(e.target.value)} />
           </div>
         </div>

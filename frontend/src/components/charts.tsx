@@ -13,8 +13,6 @@ import {
   BarElement,
 } from "chart.js";
 import { useTheme } from "next-themes";
-import { Tooltip as UITooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle } from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -186,19 +184,9 @@ export function GlobalVisitorChart({ data }: { data: any }) {
   }, [theme, data]);
 
   return (
-    <Card style={{ position: "relative" }}>
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-1">
-          🌍 Global Visitor Distribution
-          <UITooltip>
-            <TooltipTrigger>
-              <HelpCircle className="h-4 w-4 text-muted-foreground" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>A world map showing the distribution of visitors by country.</p>
-            </TooltipContent>
-          </UITooltip>
-        </CardTitle>
+        <CardTitle>🌍 Global Visitor Distribution</CardTitle>
       </CardHeader>
       <CardContent>
         <div ref={chartDiv} style={{ width: "100%", height: "600px" }}></div>
@@ -232,19 +220,9 @@ function DeviceAnalyticsChart({ data }: { data: any }) {
     };
 
   return (
-    <Card style={{ position: "relative" }}>
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-1">
-          📱 Device Analytics
-          <UITooltip>
-            <TooltipTrigger>
-              <HelpCircle className="h-4 w-4 text-muted-foreground" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>A doughnut chart showing the distribution of visitors by device type.</p>
-            </TooltipContent>
-          </UITooltip>
-        </CardTitle>
+        <CardTitle>📱 Device Analytics</CardTitle>
       </CardHeader>
       <CardContent className="h-[400px] w-full">
         <Doughnut data={chartData} options={options} />
@@ -280,19 +258,9 @@ function BrowserDistributionChart({ data }: { data: any }) {
     };
 
   return (
-    <Card style={{ position: "relative" }}>
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-1">
-          🌐 Browser Distribution
-          <UITooltip>
-            <TooltipTrigger>
-              <HelpCircle className="h-4 w-4 text-muted-foreground" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>A bar chart showing the distribution of visitors by browser.</p>
-            </TooltipContent>
-          </UITooltip>
-        </CardTitle>
+        <CardTitle>🌐 Browser Distribution</CardTitle>
       </CardHeader>
       <CardContent className="h-[400px] w-full">
         <Bar data={chartData} options={options} />

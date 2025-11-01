@@ -4,8 +4,6 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip as UITooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle } from "lucide-react";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -33,19 +31,9 @@ export function TrafficTimelineChart({ data }: { data: any[] }) {
   })).sort((a, b) => a.date.getTime() - b.date.getTime());
 
   return (
-    <Card style={{ position: "relative" }}>
+    <Card>
         <CardHeader>
-            <CardTitle className="flex items-center gap-1">
-                📈 Traffic Timeline
-                <UITooltip>
-                    <TooltipTrigger>
-                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>An area chart showing the trend of website traffic over time.</p>
-                    </TooltipContent>
-                </UITooltip>
-            </CardTitle>
+            <CardTitle>📈 Traffic Timeline</CardTitle>
         </CardHeader>
         <CardContent>
             <ResponsiveContainer width="100%" height={400}>
