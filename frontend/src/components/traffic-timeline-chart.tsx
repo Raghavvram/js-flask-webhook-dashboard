@@ -4,7 +4,19 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart } from "lucide-react";
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: {
+    payload: {
+      date: string;
+      count: number;
+      uniqueVisitors: number;
+      returningVisitors: number;
+    };
+  }[];
+}
+
+const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -20,7 +32,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function TrafficTimelineChart({ data }: { data: any[] }) {
+export interface TrafficTimelineData {
+    date: string;
+    count: number;
+    unique_visitors: number;
+    returning_visitors: number;
+}
+
+export function TrafficTimelineChart({ data }: { data: TrafficTimelineData[] }) {
 
   const chartData = data?.map(item => ({
     date: new Date(item.date),
@@ -35,7 +54,7 @@ export function TrafficTimelineChart({ data }: { data: any[] }) {
             <CardTitle className="flex items-center gap-2"><LineChart className="h-5 w-5" /> Traffic Timeline</CardTitle>
         </CardHeader>
         <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
+            <ResponsiveContainer width="100%" height={300} className="md:h-[400px]">
                 <AreaChart data={chartData}>
                     <defs>
                         <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">

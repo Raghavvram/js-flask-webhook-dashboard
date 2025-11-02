@@ -92,7 +92,31 @@ const countryCodeMapping: { [key: string]: string } = {
     'ZM': 'Zambia', 'ZW': 'Zimbabwe'
 };
 
-export function GlobalVisitorChart({ data }: { data: any }) {
+export interface GlobalVisitorData {
+    id: string;
+    value: number;
+    unique_visitors: number;
+    returning_visitors: number;
+}
+
+export interface DeviceAnalyticsData {
+    device_type: string;
+    count: number;
+}
+
+export interface BrowserDistributionData {
+    browser: string;
+    count: number;
+}
+
+export interface AnalyticsChartsGridProps {
+    chartsData: {
+        by_device: DeviceAnalyticsData[];
+        by_browser: BrowserDistributionData[];
+    };
+}
+
+export function GlobalVisitorChart({ data }: { data: GlobalVisitorData[] }) {
   const { theme } = useTheme();
   const chartDiv = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any | null>(null);

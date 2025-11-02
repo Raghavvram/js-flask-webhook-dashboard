@@ -15,12 +15,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { useState, useMemo } from "react";
 import { Users } from "lucide-react";
 
-// This is a placeholder for the actual data type
-type Visitor = any;
+export interface Visitor {
+  created_at: string;
+  location: string;
+  device_type: string;
+  browser: string;
+  page_visited: string;
+  time_spent_seconds: number;
+  public_ip: string;
+  city: string;
+  country: string;
+}
 
 interface VisitorsTableProps {
   visitors: Visitor[];
@@ -30,13 +38,13 @@ export function VisitorsTable({ visitors }: VisitorsTableProps) {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: string } | null>(null);
 
   const sortedVisitors = useMemo(() => {
-    let sortableVisitors = [...visitors];
+    const sortableVisitors = [...visitors];
     if (sortConfig !== null) {
       sortableVisitors.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        if (a[sortConfig.key as keyof Visitor] < b[sortConfig.key as keyof Visitor]) {
           return sortConfig.direction === 'ascending' ? -1 : 1;
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (a[sortConfig.key as keyof Visitor] > b[sortConfig.key as keyof Visitor]) {
           return sortConfig.direction === 'ascending' ? 1 : -1;
         }
         return 0;
@@ -72,7 +80,7 @@ export function VisitorsTable({ visitors }: VisitorsTableProps) {
               <TableHead onClick={() => requestSort('created_at')}>
                 Timestamp{getSortIndicator('created_at')}
               </TableHead>
-              <TableHead onClick={() => requestSort('location')}>
+              <TableHead className="hidden md:table-cell" onClick={() => requestSort('location')}>
                 Location{getSortIndicator('location')}
               </TableHead>
               <TableHead onClick={() => requestSort('device_type')}>
@@ -81,13 +89,13 @@ export function VisitorsTable({ visitors }: VisitorsTableProps) {
               <TableHead onClick={() => requestSort('browser')}>
                 Browser{getSortIndicator('browser')}
               </TableHead>
-              <TableHead onClick={() => requestSort('page_visited')}>
+              <TableHead className="hidden md:table-cell" onClick={() => requestSort('page_visited')}>
                 Page Visited{getSortIndicator('page_visited')}
               </TableHead>
-              <TableHead onClick={() => requestSort('time_spent_seconds')}>
+              <TableHead className="hidden sm:table-cell" onClick={() => requestSort('time_spent_seconds')}>
                 Session Time{getSortIndicator('time_spent_seconds')}
               </TableHead>
-              <TableHead onClick={() => requestSort('public_ip')}>
+              <TableHead className="hidden sm:table-cell" onClick={() => requestSort('public_ip')}>
                 IP Address{getSortIndicator('public_ip')}
               </TableHead>
             </TableRow>
@@ -109,14 +117,14 @@ export function VisitorsTable({ visitors }: VisitorsTableProps) {
                 return (
                   <TableRow key={index}>
                     <TableCell>{createdAt.toLocaleString()}</TableCell>
-                    <TableCell>{location}</TableCell>
+                    <TableCell className="hidden md:table-cell">{location}</TableCell>
                     <TableCell>{visitor.device_type || "-"}</TableCell>
                     <TableCell>{visitor.browser || "-"}</TableCell>
-                    <TableCell title={visitor.page_visited || ""}>
+                    <TableCell className="hidden md:table-cell" title={visitor.page_visited || ""}>
                       {pageUrl}
                     </TableCell>
-                    <TableCell>{timeSpent}</TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">{timeSpent}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <code>{visitor.public_ip || "-"}</code>
                     </TableCell>
                   </TableRow>

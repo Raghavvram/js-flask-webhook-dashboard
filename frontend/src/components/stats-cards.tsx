@@ -29,9 +29,18 @@ function StatCard({ title, value, icon }: StatCardProps) {
   );
 }
 
-export function StatsGrid({ stats }: { stats: any }) {
+export interface StatsGridProps {
+  stats: {
+    total_visitors: number;
+    unique_visitors: number;
+    repeated_visitors: number;
+    avg_time_on_page: number;
+  };
+}
+
+export function StatsGrid({ stats }: StatsGridProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-12">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-4 md:mb-12">
       <StatCard
         title="Total Visitors"
         value={stats?.total_visitors || "-"}
