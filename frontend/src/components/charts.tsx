@@ -143,74 +143,74 @@ export function GlobalVisitorChart({ data }: { data: GlobalVisitorData[] }) {
       );
 
     if (chartDiv.current) {
-      root = am5.Root.new(chartDiv.current);
-      root.setThemes([am5themes_Animated.default.new(root)]);
-    }
+        root = am5.Root.new(chartDiv.current);
+        root.setThemes([am5themes_Animated.default.new(root)]);
 
-      let chart = root.container.children.push(
-        am5map.MapChart.new(root, {
-          projection: am5map.geoMercator(),
-          homeZoomLevel: 1.2,
-          homeGeoPoint: { longitude: 0, latitude: 0 },
-        })
-      );
+        let chart = root.container.children.push(
+            am5map.MapChart.new(root, {
+            projection: am5map.geoMercator(),
+            homeZoomLevel: 1.2,
+            homeGeoPoint: { longitude: 0, latitude: 0 },
+            })
+        );
 
-      let polygonSeries = chart.series.push(
-        am5map.MapPolygonSeries.new(root, {
-          geoJSON: am5geodata_worldLow.default,
-          exclude: ["AQ"],
-          valueField: "value",
-          calculateAggregates: true,
-        })
-      );
+        let polygonSeries = chart.series.push(
+            am5map.MapPolygonSeries.new(root, {
+            geoJSON: am5geodata_worldLow.default,
+            exclude: ["AQ"],
+            valueField: "value",
+            calculateAggregates: true,
+            })
+        );
 
-      const isDark = theme === 'dark';
+        const isDark = theme === 'dark';
 
-      const processedData = data
-        ?.map((item: any) => ({
-          id: item.id,
-          name: countryCodeMapping[item.id] || item.id,
-          value: item.value || 0,
-          unique_visitors: item.unique_visitors || 0,
-          returning_visitors: item.returning_visitors || 0,
-        }))
-        .filter((item: any) => item.value > 0 && item.id);
-      polygonSeries.data.setAll(processedData || []);
+        const processedData = data
+            ?.map((item: any) => ({
+            id: item.id,
+            name: countryCodeMapping[item.id] || item.id,
+            value: item.value || 0,
+            unique_visitors: item.unique_visitors || 0,
+            returning_visitors: item.returning_visitors || 0,
+            }))
+            .filter((item: any) => item.value > 0 && item.id);
+        polygonSeries.data.setAll(processedData || []);
 
-      polygonSeries.mapPolygons.template.setAll({
-        tooltipText: "{name}:\nTotal Visitors: {value}\nUnique Visitors: {unique_visitors}\nReturning Visitors: {returning_visitors}",
-        interactive: true,
-        fill: isDark ? am5.color(0x252d3d) : am5.color(0xeeeeee),
-        stroke: isDark ? am5.color(0x374151) : am5.color(0xbbbbbb),
-        strokeWidth: 0.5,
-      });
+        polygonSeries.mapPolygons.template.setAll({
+            tooltipText: "{name}:\nTotal Visitors: {value}\nUnique Visitors: {unique_visitors}\nReturning Visitors: {returning_visitors}",
+            interactive: true,
+            fill: isDark ? am5.color(0x252d3d) : am5.color(0xeeeeee),
+            stroke: isDark ? am5.color(0x374151) : am5.color(0xbbbbbb),
+            strokeWidth: 0.5,
+        });
 
-      polygonSeries.mapPolygons.template.states.create("hover", {
-        fill: am5.color(0x3b82f6),
-      });
+        polygonSeries.mapPolygons.template.states.create("hover", {
+            fill: am5.color(0x3b82f6),
+        });
 
-      polygonSeries.set("heatRules", [
-        {
-          target: polygonSeries.mapPolygons.template,
-          key: "fill",
-          min: am5.color(0x3b82f6),
-          max: am5.color(0x10b981),
-          dataField: "value",
-          logarithmic: false,
-        },
-        {
+        polygonSeries.set("heatRules", [
+            {
             target: polygonSeries.mapPolygons.template,
-            key: "fillOpacity",
-            min: 0.5,
-            max: 0.5,
+            key: "fill",
+            min: am5.color(0x3b82f6),
+            max: am5.color(0x10b981),
             dataField: "value",
             logarithmic: false,
-        }
-      ]);
+            },
+            {
+                target: polygonSeries.mapPolygons.template,
+                key: "fillOpacity",
+                min: 0.5,
+                max: 0.5,
+                dataField: "value",
+                logarithmic: false,
+            }
+        ]);
 
-      chart.children.push(am5map.ZoomControl.new(root, {}));
+        chart.children.push(am5map.ZoomControl.new(root, {}));
 
-      chartRef.current = root;
+        chartRef.current = root;
+      }
     })();
 
     return () => {

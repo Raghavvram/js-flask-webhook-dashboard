@@ -115,7 +115,7 @@ export function VisitorsTable({ visitors }: VisitorsTableProps) {
                   [visitor.city, visitor.country].filter(Boolean).join(", ") || "-";
 
                 return (
-                  <TableRow key={index}>
+                  <TableRow key={visitor.created_at}>
                     <TableCell>{createdAt.toLocaleString()}</TableCell>
                     <TableCell className="hidden md:table-cell">{location}</TableCell>
                     <TableCell>{visitor.device_type || "-"}</TableCell>
