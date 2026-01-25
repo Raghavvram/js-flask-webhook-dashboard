@@ -13,9 +13,7 @@ export function Header() {
           </h1>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-muted-foreground text-sm hidden md:block" id="lastUpdate">
-            Last updated: Loading...
-          </div>
+
           <ThemeToggle />
         </div>
       </div>
