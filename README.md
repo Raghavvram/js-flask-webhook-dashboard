@@ -1,4 +1,4 @@
-# Analytics Dashboard
+# T.R.A.C (TRAC Real-time Analytics Conduit)
 
 A simple and modern dashboard to display data from a Supabase database. This project consists of a Flask backend that provides a REST API and a Next.js frontend.
 
