@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "next-themes";
 import MapLibreGL, { type PopupOptions, type MarkerOptions } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
@@ -20,60 +21,7 @@ import { X, Minus, Plus, Locate, Maximize, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-// Check document class for theme (works with next-themes, etc.)
-function getDocumentTheme(): Theme | null {
-  if (typeof document === "undefined") return null;
-  if (document.documentElement.classList.contains("dark")) return "dark";
-  if (document.documentElement.classList.contains("light")) return "light";
-  return null;
-}
 
-// Get system preference
-function getSystemTheme(): Theme {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
-function useResolvedTheme(themeProp?: "light" | "dark"): "light" | "dark" {
-  const [detectedTheme, setDetectedTheme] = useState<"light" | "dark">(
-    () => getDocumentTheme() ?? getSystemTheme()
-  );
-
-  useEffect(() => {
-    if (themeProp) return; // Skip detection if theme is provided via prop
-
-    // Watch for document class changes (e.g., next-themes toggling dark class)
-    const observer = new MutationObserver(() => {
-      const docTheme = getDocumentTheme();
-      if (docTheme) {
-        setDetectedTheme(docTheme);
-      }
-    });
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    // Also watch for system preference changes
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleSystemChange = (e: MediaQueryListEvent) => {
-      // Only use system preference if no document class is set
-      if (!getDocumentTheme()) {
-        setDetectedTheme(e.matches ? "dark" : "light");
-      }
-    };
-    mediaQuery.addEventListener("change", handleSystemChange);
-
-    return () => {
-      observer.disconnect();
-      mediaQuery.removeEventListener("change", handleSystemChange);
-    };
-  }, [themeProp]);
-
-  return themeProp ?? detectedTheme;
-}
 
 type MapContextValue = {
   map: MapLibreGL.Map | null;
@@ -137,7 +85,9 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   const [isStyleLoaded, setIsStyleLoaded] = useState(false);
   const currentStyleRef = useRef<MapStyleOption | null>(null);
   const styleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const resolvedTheme = useResolvedTheme(themeProp);
+  const { resolvedTheme: nextThemeResolved } = useTheme();
+  // Cast to specific theme type if needed, though next-themes usually returns 'dark' | 'light'
+  const resolvedTheme = themeProp ?? (nextThemeResolved as "light" | "dark");
 
   const mapStyles = useMemo(
     () => ({
