@@ -32,6 +32,34 @@ The dashboard is built with Tailwind CSS for a clean and responsive UI, and it f
 └── README.md            # This file.
 ```
 
+The **js-flask-webhook-dashboard** project is a full-stack application designed to track user activity via a JavaScript snippet and visualize that data on a modern dashboard.
+
+Based on the repository's architecture (Next.js frontend, Flask backend, and Supabase database), here is the Mermaid workflow diagram illustrating the data flow from ingestion to visualization.
+
+### Project Workflow Diagram
+
+
+### Breakdown of the Workflow
+
+1. **Data Ingestion (The Tracker):**
+* An external website embeds the `tracker.js` script.
+* When a user visits, the script gathers metadata (device type, browser, location, etc.) and sends a POST request to the **Flask** backend's webhook endpoint.
+
+
+2. **Processing & Storage:**
+* The **Flask** server receives the payload, processes it, and uses the Supabase Python SDK to store the entry in the `visitors` table.
+
+
+3. **Data Retrieval (The API):**
+* When you access the **Next.js** dashboard, the frontend calls the Flask REST API.
+* The backend interacts with **Supabase**, often calling specialized SQL functions (like `get_filtered_analytics_visual`) to handle complex filtering and aggregation directly in the database for better performance.
+
+
+4. **Visualization:**
+* The processed data is sent back to the Next.js frontend as JSON.
+* The dashboard uses **Chart.js** and **Tailwind CSS** to render the analytics, including visitor timelines, geographic maps, and device distribution charts.
+
+
 ## Getting Started
 
 Follow these instructions to set up and run the project on your local machine.
