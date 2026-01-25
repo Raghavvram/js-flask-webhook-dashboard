@@ -175,14 +175,24 @@ function WorldChoroplethLayer({ data }: { data: GlobalVisitorData[] }) {
         source: sourceId,
         paint: {
           "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "value"],
-            0, theme === 'dark' ? "#1f2937" : "#e5e7eb", // Gray for 0
-            1, theme === 'dark' ? "#1e3a8a" : "#bfdbfe", // Light blue for low
-            maxValue, theme === 'dark' ? "#3b82f6" : "#2563eb" // Blue for high
+            "case",
+            ["boolean", ["feature-state", "hover"], false],
+            theme === 'dark' ? "#60a5fa" : "#3b82f6", // Brighter blue on hover
+            [
+              "interpolate",
+              ["linear"],
+              ["get", "value"],
+              0, theme === 'dark' ? "#1f2937" : "#e5e7eb", // Gray for 0
+              1, theme === 'dark' ? "#312e81" : "#dbeafe", // Deep Indigo/Light Blue for low
+              maxValue, theme === 'dark' ? "#4f46e5" : "#2563eb" // Indigo/Blue for high
+            ]
           ],
-          "fill-opacity": 0.9
+          "fill-opacity": [
+            "case",
+            ["boolean", ["feature-state", "hover"], false],
+            1.0,
+            0.9
+          ]
         }
       });
 
@@ -191,8 +201,13 @@ function WorldChoroplethLayer({ data }: { data: GlobalVisitorData[] }) {
         type: "line",
         source: sourceId,
         paint: {
-          "line-color": theme === 'dark' ? "#374151" : "#d1d5db",
-          "line-width": 0.5
+          "line-color": theme === 'dark' ? "#374151" : "#ffffff",
+          "line-width": [
+            "case",
+            ["boolean", ["feature-state", "hover"], false],
+            1.5,
+            0.5
+          ]
         }
       });
 
