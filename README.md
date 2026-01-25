@@ -32,10 +32,6 @@ The dashboard is built with Tailwind CSS for a clean and responsive UI, and it f
 └── README.md            # This file.
 ```
 
-The **js-flask-webhook-dashboard** project is a full-stack application designed to track user activity via a JavaScript snippet and visualize that data on a modern dashboard.
-
-Based on the repository's architecture (Next.js frontend, Flask backend, and Supabase database), here is the Mermaid workflow diagram illustrating the data flow from ingestion to visualization.
-
 ### Project Workflow Diagram
 
 
