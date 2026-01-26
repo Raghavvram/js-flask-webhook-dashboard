@@ -75,7 +75,8 @@ Follow these instructions to set up and run the project on your local machine.
 1.  Go to [Supabase](https://supabase.com/) and create a new project.
 2.  Navigate to the **SQL Editor**.
 3.  Click **New query** and run the SQL from the `supabase_analytics_function.sql` file to create the `visitors` table and the `get_filtered_analytics_visual` function.
-4.  Navigate to **Project Settings** > **API**. Find your **Project URL** and **anon (public) key**. You will need these for the next step.
+4.  Optionally, run the SQL from `backend/indexes.sql` to add indexes for better performance.
+5.  Navigate to **Project Settings** > **API**. Find your **Project URL** and **anon (public) key**. You will need these for the next step.
 
 ### 2. Local Installation
 

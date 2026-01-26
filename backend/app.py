@@ -124,7 +124,7 @@ def track():
                         ts = ts // 1000
                     if ts > 10**10:  # Too large, divide by 1000 more
                         ts = ts // 1000
-                    first_seen = datetime.utcfromtimestamp(ts / 1000 if ts > 10**9 else ts).isoformat()
+                    first_seen = datetime.fromtimestamp(ts / 1000 if ts > 10**9 else ts, datetime.timezone.utc).isoformat()
                 else:
                     # Try parsing ISO string
                     first_seen = date_parse(str(first_seen_raw)).isoformat()
@@ -197,4 +197,5 @@ def log_time():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug_mode, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
