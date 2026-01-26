@@ -83,6 +83,30 @@ BEGIN
           ORDER BY date
         ) d
       ), '[]'),
+      'by_week', COALESCE((
+        SELECT json_agg(row_to_json(w)) FROM (
+          SELECT
+              date_trunc('week', created_at)::date AS date,
+              COUNT(*) AS count,
+              COUNT(DISTINCT public_ip) AS unique_visitors,
+              COUNT(*) - COUNT(DISTINCT public_ip) AS returning_visitors
+          FROM filtered
+          GROUP BY date
+          ORDER BY date
+        ) w
+      ), '[]'),
+      'by_month', COALESCE((
+        SELECT json_agg(row_to_json(m)) FROM (
+          SELECT
+              date_trunc('month', created_at)::date AS date,
+              COUNT(*) AS count,
+              COUNT(DISTINCT public_ip) AS unique_visitors,
+              COUNT(*) - COUNT(DISTINCT public_ip) AS returning_visitors
+          FROM filtered
+          GROUP BY date
+          ORDER BY date
+        ) m
+      ), '[]'),
       'by_device', COALESCE((
         SELECT json_agg(row_to_json(t)) FROM (
           SELECT device_type, COUNT(*) AS count FROM filtered WHERE device_type IS NOT NULL

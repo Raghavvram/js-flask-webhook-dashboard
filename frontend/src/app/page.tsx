@@ -23,6 +23,8 @@ interface AnalyticsData {
   meta: FiltersProps["meta"];
   charts: {
     by_date: TrafficTimelineData[];
+    by_week: TrafficTimelineData[];
+    by_month: TrafficTimelineData[];
     by_country: any[];
     by_city: any[];
     by_page: any[];
@@ -36,6 +38,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [filters, setFilters] = useState<FiltersState>({});
   const [activeTab, setActiveTab] = useState("analytics");
+  const [timelineGranularity, setTimelineGranularity] = useState<'day' | 'week' | 'month'>('day');
 
   const loadData = async (currentFilters: FiltersState) => {
     const cleanedFilters: { [key: string]: string } = {};
@@ -68,13 +71,20 @@ export default function DashboardPage() {
     setFilters(newFilters);
   };
 
+  const getTimelineData = () => {
+    if (!data?.charts) return [];
+    if (timelineGranularity === 'week') return data.charts.by_week || [];
+    if (timelineGranularity === 'month') return data.charts.by_month || [];
+    return data.charts.by_date || [];
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       <main className="max-w-7xl mx-auto p-2 md:p-8">
         <StatsGrid stats={data?.stats || { total_visitors: 0, unique_visitors: 0, repeated_visitors: 0, avg_time_on_page: 0 }} />
         <Filters onFiltersChange={handleFiltersChange} meta={data?.meta || { distinct_countries: [], distinct_devices: [], distinct_browsers: [] }} />
-        
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="hidden md:block">
             <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
@@ -107,7 +117,32 @@ export default function DashboardPage() {
             <AnalyticsChartsGrid chartsData={data?.charts || { by_device: [], by_browser: [] }} />
           </TabsContent>
           <TabsContent value="timeline">
-            <TrafficTimelineChart data={data?.charts?.by_date || []} />
+            <div className="mb-4 flex justify-end">
+              <div className="inline-flex rounded-md shadow-sm" role="group">
+                <button
+                  type="button"
+                  onClick={() => setTimelineGranularity('day')}
+                  className={`px-4 py-2 text-sm font-medium border rounded-l-lg ${timelineGranularity === 'day' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+                >
+                  Daily
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimelineGranularity('week')}
+                  className={`px-4 py-2 text-sm font-medium border-t border-b ${timelineGranularity === 'week' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+                >
+                  Weekly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimelineGranularity('month')}
+                  className={`px-4 py-2 text-sm font-medium border rounded-r-lg ${timelineGranularity === 'month' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+                >
+                  Monthly
+                </button>
+              </div>
+            </div>
+            <TrafficTimelineChart data={getTimelineData()} granularity={timelineGranularity} />
           </TabsContent>
           <TabsContent value="global">
             <GlobalVisitorChart data={data?.charts?.by_country || []} />
