@@ -4,6 +4,9 @@ A simple and modern dashboard to display data from a Supabase database. This pro
 
 The dashboard is built with Tailwind CSS for a clean and responsive UI, and it features a dark mode. The project is fully configured for seamless deployment on [Vercel](https://vercel.com/).
 
+<img src="Flow Diagram.png" alt="Dashboard Screenshot">
+<small>Note: Generated using gemini</small>
+
 ## Features
 
 - **Modern Dashboard**: A clean, responsive dashboard built with Next.js and Tailwind CSS to view data.
