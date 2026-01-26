@@ -31,9 +31,6 @@ export interface FiltersProps {
   };
 }
 
-  };
-}
-
 export function Filters({ onFiltersChange, meta, showDateInputs = true, showMonthPicker = false }: FiltersProps & { showDateInputs?: boolean; showMonthPicker?: boolean }) {
   const [country, setCountry] = useState("all");
   const [device, setDevice] = useState("all");
