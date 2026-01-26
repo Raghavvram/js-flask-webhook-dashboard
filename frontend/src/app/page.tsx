@@ -23,6 +23,8 @@ interface AnalyticsData {
   meta: FiltersProps["meta"];
   charts: {
     by_date: TrafficTimelineData[];
+    by_week: TrafficTimelineData[];
+    by_month: TrafficTimelineData[];
     by_country: any[];
     by_city: any[];
     by_page: any[];
@@ -36,6 +38,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [filters, setFilters] = useState<FiltersState>({});
   const [activeTab, setActiveTab] = useState("analytics");
+  const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month' | 'custom'>('day');
 
   const loadData = async (currentFilters: FiltersState) => {
     const cleanedFilters: { [key: string]: string } = {};
@@ -44,6 +47,9 @@ export default function DashboardPage() {
         cleanedFilters[key] = currentFilters[key];
       }
     }
+
+    // Add period to params
+    cleanedFilters['period'] = selectedPeriod;
 
     const params = new URLSearchParams(cleanedFilters);
     try {
@@ -62,19 +68,68 @@ export default function DashboardPage() {
     loadData(filters);
     const interval = setInterval(() => loadData(filters), 30000);
     return () => clearInterval(interval);
-  }, [filters]);
+  }, [filters, selectedPeriod]);
 
   const handleFiltersChange = (newFilters: FiltersState) => {
     setFilters(newFilters);
+  };
+
+  const handlePeriodChange = (period: 'day' | 'week' | 'month' | 'custom') => {
+    setSelectedPeriod(period);
+  };
+
+  const getTimelineData = () => {
+    // Backend now returns dynamic resolution in 'by_date' (or we could have backend map it to correct key)
+    // The Plan says: "Use this parameter dynamically in the GROUP BY and ORDER BY clauses: date_trunc(granularity, created_at)."
+    // And backend returns 'by_date'.
+    return data?.charts?.by_date || [];
   };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       <main className="max-w-7xl mx-auto p-2 md:p-8">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+          <div className="inline-flex rounded-md shadow-sm" role="group">
+            <button
+              type="button"
+              onClick={() => handlePeriodChange('day')}
+              className={`px-4 py-2 text-sm font-medium border rounded-l-lg ${selectedPeriod === 'day' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+            >
+              24H
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePeriodChange('week')}
+              className={`px-4 py-2 text-sm font-medium border-t border-b ${selectedPeriod === 'week' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+            >
+              7D
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePeriodChange('month')}
+              className={`px-4 py-2 text-sm font-medium border-t border-b ${selectedPeriod === 'month' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+            >
+              30D
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePeriodChange('custom')}
+              className={`px-4 py-2 text-sm font-medium border rounded-r-lg ${selectedPeriod === 'custom' ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground hover:bg-muted'}`}
+            >
+              Custom
+            </button>
+          </div>
+        </div>
+
         <StatsGrid stats={data?.stats || { total_visitors: 0, unique_visitors: 0, repeated_visitors: 0, avg_time_on_page: 0 }} />
-        <Filters onFiltersChange={handleFiltersChange} meta={data?.meta || { distinct_countries: [], distinct_devices: [], distinct_browsers: [] }} />
-        
+        <Filters
+          onFiltersChange={handleFiltersChange}
+          meta={data?.meta || { distinct_countries: [], distinct_devices: [], distinct_browsers: [] }}
+          showDateInputs={selectedPeriod === 'custom'}
+        />
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="hidden md:block">
             <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
@@ -107,7 +162,7 @@ export default function DashboardPage() {
             <AnalyticsChartsGrid chartsData={data?.charts || { by_device: [], by_browser: [] }} />
           </TabsContent>
           <TabsContent value="timeline">
-            <TrafficTimelineChart data={data?.charts?.by_date || []} />
+            <TrafficTimelineChart data={getTimelineData()} granularity={selectedPeriod === 'week' || selectedPeriod === 'month' ? 'day' : (selectedPeriod === 'day' ? 'hour' : 'day')} />
           </TabsContent>
           <TabsContent value="global">
             <GlobalVisitorChart data={data?.charts?.by_country || []} />

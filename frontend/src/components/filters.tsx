@@ -31,7 +31,7 @@ export interface FiltersProps {
   };
 }
 
-export function Filters({ onFiltersChange, meta }: FiltersProps) {
+export function Filters({ onFiltersChange, meta, showDateInputs = true, showMonthPicker = false }: FiltersProps & { showDateInputs?: boolean; showMonthPicker?: boolean }) {
   const [country, setCountry] = useState("all");
   const [device, setDevice] = useState("all");
   const [browser, setBrowser] = useState("all");
@@ -39,14 +39,34 @@ export function Filters({ onFiltersChange, meta }: FiltersProps) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  // Month Picker State
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
+
   const handleApply = () => {
+    let finalStartDate = startDate;
+    let finalEndDate = endDate;
+
+    if (showMonthPicker) {
+      // Calculate start/end of month
+      const y = parseInt(selectedYear);
+      const m = parseInt(selectedMonth);
+      const start = new Date(y, m - 1, 1);
+      const end = new Date(y, m, 0); // Last day of month
+
+      // Format as YYYY-MM-DD
+      finalStartDate = start.toISOString().split('T')[0];
+      finalEndDate = end.toISOString().split('T')[0];
+    }
+
     onFiltersChange({
       country_filter: country === "all" ? "" : country,
       device_filter: device === "all" ? "" : device,
       browser_filter: browser === "all" ? "" : browser,
       visitor_type_filter: visitorType,
-      start_date_filter: startDate,
-      end_date_filter: endDate,
+      start_date_filter: finalStartDate,
+      end_date_filter: finalEndDate,
     });
   };
 
@@ -57,6 +77,10 @@ export function Filters({ onFiltersChange, meta }: FiltersProps) {
     setVisitorType("all");
     setStartDate("");
     setEndDate("");
+    // Reset month picker too
+    setSelectedYear(currentYear.toString());
+    setSelectedMonth((new Date().getMonth() + 1).toString());
+
     onFiltersChange({
       country_filter: "",
       device_filter: "",
@@ -66,6 +90,22 @@ export function Filters({ onFiltersChange, meta }: FiltersProps) {
       end_date_filter: "",
     });
   };
+
+  const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
+  const months = [
+    { value: "1", label: "January" },
+    { value: "2", label: "February" },
+    { value: "3", label: "March" },
+    { value: "4", label: "April" },
+    { value: "5", label: "May" },
+    { value: "6", label: "June" },
+    { value: "7", label: "July" },
+    { value: "8", label: "August" },
+    { value: "9", label: "September" },
+    { value: "10", label: "October" },
+    { value: "11", label: "November" },
+    { value: "12", label: "December" },
+  ];
 
   return (
     <Card className="mb-4 md:mb-12">
@@ -123,14 +163,44 @@ export function Filters({ onFiltersChange, meta }: FiltersProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="startDateFilter">Start Date</Label>
-            <Input type="date" id="startDateFilter" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="endDateFilter">End Date</Label>
-            <Input type="date" id="endDateFilter" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          </div>
+          {showDateInputs && (
+            <>
+              <div className="grid gap-2">
+                <Label htmlFor="startDateFilter">Start Date</Label>
+                <Input type="date" id="startDateFilter" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="endDateFilter">End Date</Label>
+                <Input type="date" id="endDateFilter" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              </div>
+            </>
+          )}
+          {showMonthPicker && (
+            <>
+              <div className="grid gap-2">
+                <Label htmlFor="yearFilter">Year</Label>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger id="yearFilter">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="monthFilter">Month</Label>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger id="monthFilter">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
         </div>
         <div className="flex flex-col sm:flex-row justify-end gap-2">
           <Button variant="outline" onClick={handleReset}>

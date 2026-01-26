@@ -7,7 +7,8 @@ CREATE OR REPLACE FUNCTION public.get_filtered_analytics_visual(
   url_filter TEXT DEFAULT NULL,
   browser_filter TEXT DEFAULT NULL,
   ip_filter TEXT DEFAULT NULL,
-  isp_filter TEXT DEFAULT NULL
+  isp_filter TEXT DEFAULT NULL,
+  granularity TEXT DEFAULT 'day'
 )
 RETURNS JSON LANGUAGE plpgsql AS $$
 DECLARE
@@ -74,14 +75,38 @@ BEGIN
       'by_date', COALESCE((
         SELECT json_agg(row_to_json(d)) FROM (
           SELECT
-              created_at::date AS date,
+              date_trunc(granularity, created_at) AS date,
+              COUNT(*) AS count,
+              COUNT(DISTINCT public_ip) AS unique_visitors,
+              COUNT(*) - COUNT(DISTINCT public_ip) AS returning_visitors
+          FROM filtered
+          GROUP BY 1
+          ORDER BY 1
+        ) d
+      ), '[]'),
+      'by_week', COALESCE((
+        SELECT json_agg(row_to_json(w)) FROM (
+          SELECT
+              date_trunc('week', created_at)::date AS date,
               COUNT(*) AS count,
               COUNT(DISTINCT public_ip) AS unique_visitors,
               COUNT(*) - COUNT(DISTINCT public_ip) AS returning_visitors
           FROM filtered
           GROUP BY date
           ORDER BY date
-        ) d
+        ) w
+      ), '[]'),
+      'by_month', COALESCE((
+        SELECT json_agg(row_to_json(m)) FROM (
+          SELECT
+              date_trunc('month', created_at)::date AS date,
+              COUNT(*) AS count,
+              COUNT(DISTINCT public_ip) AS unique_visitors,
+              COUNT(*) - COUNT(DISTINCT public_ip) AS returning_visitors
+          FROM filtered
+          GROUP BY date
+          ORDER BY date
+        ) m
       ), '[]'),
       'by_device', COALESCE((
         SELECT json_agg(row_to_json(t)) FROM (

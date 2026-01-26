@@ -15,3 +15,4 @@ backend/.sonar/.sonar_lock
 frontend/.scannerwork/.sonar_lock
 frontend/.scannerwork/report-task.txt
 backend/.sonar/report-task.txt
+frontend/pnpm-workspace.yaml
