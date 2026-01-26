@@ -53,18 +53,93 @@ def get_analytics():
             'isp_filter': request.args.get('isp_filter'),
         }
 
+        # Helper for dynamic period logic
+        period = request.args.get('period', 'day')
+        now = datetime.now()
+        
+        # Defaults
+        granularity = 'day'
+        
+        if period == 'day':
+            # Last 24 hours from now
+            # We want hours granularity
+            granularity = 'hour'
+            # start_date_filter = now - 24h
+            # But let's respect if user provided something else? 
+            # The requirements say: "If period == 'day': Set start_date to now - 24 hours."
+            # So we override whatever might be in args if period is set to a preset.
+            from datetime import timedelta
+            start_date_filter = (now - timedelta(days=1)).isoformat()
+            end_date_filter = None # up to now
+            
+            # Update params
+            params['start_date_filter'] = start_date_filter
+            params['end_date_filter'] = end_date_filter
+            
+        elif period == 'week':
+            # Last 7 days
+            granularity = 'day'
+            from datetime import timedelta
+            start_date_filter = (now - timedelta(days=7)).isoformat()
+            end_date_filter = None
+            
+            params['start_date_filter'] = start_date_filter
+            params['end_date_filter'] = end_date_filter
+            
+        elif period == 'month':
+            # Last 30 days
+            granularity = 'day'
+            from datetime import timedelta
+            start_date_filter = (now - timedelta(days=30)).isoformat()
+            end_date_filter = None
+            
+            params['start_date_filter'] = start_date_filter
+            params['end_date_filter'] = end_date_filter
+            
+        elif period == 'custom':
+            # Use provided start/end dates
+            # Decide granularity based on range duration
+            start_str = params.get('start_date_filter')
+            end_str = params.get('end_date_filter')
+            
+            # Default to day
+            granularity = 'day'
+            
+            if start_str:
+                try:
+                    # We already parsed these in the loop above? No, the loop above runs AFTER this block in original code? 
+                    # Wait, the loop above was:
+                    # for k, v in params.items(): ...
+                    # I am replacing the RPC call which happens AFTER the loop.
+                    # So params are already ISO strings or None.
+                    
+                    s_date = date_parse(start_str)
+                    e_date = date_parse(end_str) if end_str else now
+                    
+                    diff = e_date - s_date
+                    if diff.days <= 3:
+                        granularity = 'hour'
+                    else:
+                        granularity = 'day'
+                except:
+                    pass
+
         # Convert empty strings to None and parse dates to ISO8601 strings
+        # (This loop was already here, but we might have just set some params to ISO strings already, which is fine)
         for k, v in params.items():
             if not v:
                 params[k] = None
             else:
                 if k in ('start_date_filter', 'end_date_filter') and v is not None:
+                   # Check if already ISO string (if we set it above)
+                   # The exisitng loop attempts date_parse. date_parse on ISO string works fine.
                     try:
                         dt = date_parse(v)
                         params[k] = dt.isoformat()
                     except Exception:
                         params[k] = None
 
+        params['granularity'] = granularity
         response = supabase.rpc('get_filtered_analytics_visual', params).execute()
         data = response.data or {}
 

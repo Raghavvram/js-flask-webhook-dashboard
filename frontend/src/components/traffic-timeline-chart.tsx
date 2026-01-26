@@ -28,7 +28,7 @@ export function TrafficTimelineChart({
   granularity = 'day'
 }: {
   data: TrafficTimelineData[]
-  granularity?: 'day' | 'week' | 'month'
+  granularity?: 'day' | 'week' | 'month' | 'hour'
 }) {
 
   const chartData = data?.map(item => ({
@@ -43,6 +43,8 @@ export function TrafficTimelineChart({
       return date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
     } else if (granularity === 'week') {
       return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } else if (granularity === 'hour') {
+      return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
     }
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
@@ -57,6 +59,8 @@ export function TrafficTimelineChart({
         dateLabel = dateObj.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
       } else if (granularity === 'week') {
         dateLabel = 'Week of ' + dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      } else if (granularity === 'hour') {
+        dateLabel = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
       } else {
         dateLabel = dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
       }

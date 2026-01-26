@@ -31,7 +31,7 @@ export interface FiltersProps {
   };
 }
 
-export function Filters({ onFiltersChange, meta }: FiltersProps) {
+export function Filters({ onFiltersChange, meta, showDateInputs = true }: FiltersProps & { showDateInputs?: boolean }) {
   const [country, setCountry] = useState("all");
   const [device, setDevice] = useState("all");
   const [browser, setBrowser] = useState("all");
@@ -123,14 +123,18 @@ export function Filters({ onFiltersChange, meta }: FiltersProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="startDateFilter">Start Date</Label>
-            <Input type="date" id="startDateFilter" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="endDateFilter">End Date</Label>
-            <Input type="date" id="endDateFilter" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          </div>
+          {showDateInputs && (
+            <>
+              <div className="grid gap-2">
+                <Label htmlFor="startDateFilter">Start Date</Label>
+                <Input type="date" id="startDateFilter" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="endDateFilter">End Date</Label>
+                <Input type="date" id="endDateFilter" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              </div>
+            </>
+          )}
         </div>
         <div className="flex flex-col sm:flex-row justify-end gap-2">
           <Button variant="outline" onClick={handleReset}>
