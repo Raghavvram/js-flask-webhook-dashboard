@@ -128,6 +128,8 @@ export default function DashboardPage() {
           onFiltersChange={handleFiltersChange}
           meta={data?.meta || { distinct_countries: [], distinct_devices: [], distinct_browsers: [] }}
           showDateInputs={selectedPeriod === 'custom'}
+          showMonthPicker={selectedPeriod === 'month'}
+          showDayPicker={selectedPeriod === 'day'}
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

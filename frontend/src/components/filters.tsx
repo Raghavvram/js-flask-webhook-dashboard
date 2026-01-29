@@ -31,13 +31,16 @@ export interface FiltersProps {
   };
 }
 
-export function Filters({ onFiltersChange, meta, showDateInputs = true, showMonthPicker = false }: FiltersProps & { showDateInputs?: boolean; showMonthPicker?: boolean }) {
+export function Filters({ onFiltersChange, meta, showDateInputs = true, showMonthPicker = false, showDayPicker = false }: FiltersProps & { showDateInputs?: boolean; showMonthPicker?: boolean; showDayPicker?: boolean }) {
   const [country, setCountry] = useState("all");
   const [device, setDevice] = useState("all");
   const [browser, setBrowser] = useState("all");
   const [visitorType, setVisitorType] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  // Day Picker State
+  const [selectedDay, setSelectedDay] = useState("");
 
   // Month Picker State
   const currentYear = new Date().getFullYear();
@@ -48,7 +51,17 @@ export function Filters({ onFiltersChange, meta, showDateInputs = true, showMont
     let finalStartDate = startDate;
     let finalEndDate = endDate;
 
-    if (showMonthPicker) {
+    if (showDayPicker) {
+      if (selectedDay) {
+        finalStartDate = selectedDay;
+        finalEndDate = selectedDay;
+      } else {
+        // Default to today if nothing selected? Or maybe just empty which implies "all time" or backend default?
+        // Usually for "Day View" if nothing is selected, maybe we shouldn't send anything or send today.
+        // Let's assume if empty, we send empty (no filter) or let backend handle defaults.
+        // But the requirement implies selecting a day.
+      }
+    } else if (showMonthPicker) {
       // Calculate start/end of month
       const y = parseInt(selectedYear);
       const m = parseInt(selectedMonth);
@@ -56,8 +69,15 @@ export function Filters({ onFiltersChange, meta, showDateInputs = true, showMont
       const end = new Date(y, m, 0); // Last day of month
 
       // Format as YYYY-MM-DD
-      finalStartDate = start.toISOString().split('T')[0];
-      finalEndDate = end.toISOString().split('T')[0];
+      // Note: toISOString() uses UTC. We should probably stick to local time YYYY-MM-DD for consistency with inputs,
+      // or handle timezone carefully.
+      // Simple way:
+      const format = (d: Date) => {
+        const offset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - offset).toISOString().split('T')[0];
+      }
+      finalStartDate = format(start);
+      finalEndDate = format(end);
     }
 
     onFiltersChange({
@@ -77,6 +97,7 @@ export function Filters({ onFiltersChange, meta, showDateInputs = true, showMont
     setVisitorType("all");
     setStartDate("");
     setEndDate("");
+    setSelectedDay("");
     // Reset month picker too
     setSelectedYear(currentYear.toString());
     setSelectedMonth((new Date().getMonth() + 1).toString());
@@ -174,6 +195,12 @@ export function Filters({ onFiltersChange, meta, showDateInputs = true, showMont
                 <Input type="date" id="endDateFilter" value={endDate} onChange={e => setEndDate(e.target.value)} />
               </div>
             </>
+          )}
+          {showDayPicker && (
+            <div className="grid gap-2">
+              <Label htmlFor="dateFilter">Date</Label>
+              <Input type="date" id="dateFilter" value={selectedDay} onChange={e => setSelectedDay(e.target.value)} />
+            </div>
           )}
           {showMonthPicker && (
             <>

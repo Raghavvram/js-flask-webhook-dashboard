@@ -1,10 +1,11 @@
 import os
+import psycopg2
+from psycopg2.extras import RealDictCursor, Json
 from datetime import datetime
 from dateutil.parser import parse as date_parse
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from supabase import create_client, Client
 from user_agents import parse
 import pycountry
 
@@ -13,9 +14,22 @@ load_dotenv()
 app = Flask(__name__, template_folder='templates')
 CORS(app, origins="*", allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "OPTIONS"])
 
-supabase_url = os.environ.get("SUPABASE_URL")
-supabase_key = os.environ.get("SUPABASE_KEY")
-supabase: Client = create_client(supabase_url, supabase_key)
+# Database connection parameters
+DB_HOST = os.environ.get("DB_HOST", "db")
+DB_NAME = os.environ.get("DB_NAME", "postgres")
+DB_USER = os.environ.get("DB_USER", "postgres")
+DB_PASS = os.environ.get("DB_PASS", "postgres")
+DB_PORT = os.environ.get("DB_PORT", "5432")
+
+def get_db_connection():
+    conn = psycopg2.connect(
+        host=DB_HOST,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASS,
+        port=DB_PORT
+    )
+    return conn
 
 def get_country_code(country_name):
     if not country_name or country_name.lower() == 'unknown':
@@ -40,6 +54,7 @@ def get_analytics():
     if request.method == 'OPTIONS':
         return '', 200
 
+    conn = None
     try:
         params = {
             'country_filter': request.args.get('country_filter'),
@@ -61,61 +76,38 @@ def get_analytics():
         granularity = 'day'
         
         if period == 'day':
-            # Last 24 hours from now
-            # We want hours granularity
             granularity = 'hour'
-            # start_date_filter = now - 24h
-            # But let's respect if user provided something else? 
-            # The requirements say: "If period == 'day': Set start_date to now - 24 hours."
-            # So we override whatever might be in args if period is set to a preset.
             from datetime import timedelta
             start_date_filter = (now - timedelta(days=1)).isoformat()
-            end_date_filter = None # up to now
-            
-            # Update params
+            end_date_filter = None 
             params['start_date_filter'] = start_date_filter
             params['end_date_filter'] = end_date_filter
             
         elif period == 'week':
-            # Last 7 days
             granularity = 'day'
             from datetime import timedelta
             start_date_filter = (now - timedelta(days=7)).isoformat()
             end_date_filter = None
-            
             params['start_date_filter'] = start_date_filter
             params['end_date_filter'] = end_date_filter
             
         elif period == 'month':
-            # Last 30 days
             granularity = 'day'
             from datetime import timedelta
             start_date_filter = (now - timedelta(days=30)).isoformat()
             end_date_filter = None
-            
             params['start_date_filter'] = start_date_filter
             params['end_date_filter'] = end_date_filter
             
         elif period == 'custom':
-            # Use provided start/end dates
-            # Decide granularity based on range duration
             start_str = params.get('start_date_filter')
             end_str = params.get('end_date_filter')
-            
-            # Default to day
             granularity = 'day'
             
             if start_str:
                 try:
-                    # We already parsed these in the loop above? No, the loop above runs AFTER this block in original code? 
-                    # Wait, the loop above was:
-                    # for k, v in params.items(): ...
-                    # I am replacing the RPC call which happens AFTER the loop.
-                    # So params are already ISO strings or None.
-                    
                     s_date = date_parse(start_str)
                     e_date = date_parse(end_str) if end_str else now
-                    
                     diff = e_date - s_date
                     if diff.days <= 3:
                         granularity = 'hour'
@@ -125,14 +117,11 @@ def get_analytics():
                     pass
 
         # Convert empty strings to None and parse dates to ISO8601 strings
-        # (This loop was already here, but we might have just set some params to ISO strings already, which is fine)
         for k, v in params.items():
             if not v:
                 params[k] = None
             else:
                 if k in ('start_date_filter', 'end_date_filter') and v is not None:
-                   # Check if already ISO string (if we set it above)
-                   # The exisitng loop attempts date_parse. date_parse on ISO string works fine.
                     try:
                         dt = date_parse(v)
                         params[k] = dt.isoformat()
@@ -140,8 +129,30 @@ def get_analytics():
                         params[k] = None
 
         params['granularity'] = granularity
-        response = supabase.rpc('get_filtered_analytics_visual', params).execute()
-        data = response.data or {}
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Call the stored function
+        cur.execute("""
+            SELECT get_filtered_analytics_visual(
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            ) as data
+        """, (
+            params['country_filter'],
+            params['start_date_filter'],
+            params['end_date_filter'],
+            params['visitor_type_filter'],
+            params['device_filter'],
+            params['url_filter'],
+            params['browser_filter'],
+            params['ip_filter'],
+            params['isp_filter'],
+            params['granularity']
+        ))
+        
+        result = cur.fetchone()
+        data = result['data'] if result else {}
 
         if 'stats' in data:
             stats = data['stats']
@@ -155,12 +166,16 @@ def get_analytics():
     except Exception as e:
         app.logger.error(f"Error in /api/analytics: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
 
 @app.route('/track', methods=['POST', 'OPTIONS'])
 def track():
     if request.method == 'OPTIONS':
         return '', 200
 
+    conn = None
     try:
         data = request.get_json(force=True)
         session_id = data.get("sessionId")
@@ -186,65 +201,79 @@ def track():
         public_ip = norm(data.get("publicIp"))
         country_code = data.get("countryCode") or get_country_code(country)
 
-        # Parse timestamp safely: convert milliseconds timestamp to ISO8601 string if it looks like milliseconds
+        # Parse timestamp
         first_seen_raw = data.get("timestamp")
         first_seen = None
         if first_seen_raw is not None:
             try:
-                # If numeric and very large, treat as milliseconds
                 if isinstance(first_seen_raw, (int, float)) or (isinstance(first_seen_raw, str) and first_seen_raw.isdigit()):
                     ts = int(first_seen_raw)
-                    # If ts looks like ms timestamp, convert to seconds
-                    if ts > 10**12:  # Likely microseconds, too large, divide
-                        ts = ts // 1000
-                    if ts > 10**10:  # Too large, divide by 1000 more
-                        ts = ts // 1000
+                    if ts > 10**12: ts = ts // 1000
+                    if ts > 10**10: ts = ts // 1000
                     first_seen = datetime.fromtimestamp(ts / 1000 if ts > 10**9 else ts, datetime.timezone.utc).isoformat()
                 else:
-                    # Try parsing ISO string
                     first_seen = date_parse(str(first_seen_raw)).isoformat()
             except Exception:
                 first_seen = None
 
-        visitor_record = {
-            "session_id": session_id,
-            "public_ip": public_ip,
-            "country": country,
-            "country_code": country_code,
-            "city": city,
-            "isp": isp,
-            "page_visited": data.get("pageVisited"),
-            "user_agent": ua_string,
-            "device_type": device_type,
-            "browser": ua.browser.family,
-            "operating_system": ua.os.family,
-            "first_seen": first_seen,
-            "time_spent_seconds": None,
-        }
-
+        time_spent_seconds = None
         if data.get("timeSpentSeconds") is not None:
             ts = int(data.get("timeSpentSeconds") or 0)
             ts = max(0, min(ts, 86400))
-            visitor_record["time_spent_seconds"] = ts
+            time_spent_seconds = ts
 
-        # Remove keys with None to avoid sending null values
-        visitor_record = {k: v for k, v in visitor_record.items() if v is not None}
-
-        supabase.table('visitors') \
-            .upsert(visitor_record, on_conflict='session_id') \
-            .execute()
+        # SQL Upsert
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        query = """
+            INSERT INTO public.visitors (
+                session_id, public_ip, country, country_code, city, isp, 
+                page_visited, user_agent, device_type, browser, operating_system, 
+                first_seen, time_spent_seconds
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, 
+                %s, %s, %s, %s, %s, 
+                %s, %s
+            ) 
+            ON CONFLICT (session_id) DO UPDATE SET
+                public_ip = EXCLUDED.public_ip,
+                country = EXCLUDED.country,
+                country_code = EXCLUDED.country_code,
+                city = EXCLUDED.city,
+                isp = EXCLUDED.isp,
+                page_visited = EXCLUDED.page_visited,
+                user_agent = EXCLUDED.user_agent,
+                device_type = EXCLUDED.device_type,
+                browser = EXCLUDED.browser,
+                operating_system = EXCLUDED.operating_system,
+                first_seen = COALESCE(visitors.first_seen, EXCLUDED.first_seen),
+                time_spent_seconds = COALESCE(EXCLUDED.time_spent_seconds, visitors.time_spent_seconds)
+        """
+        
+        cur.execute(query, (
+            session_id, public_ip, country, country_code, city, isp,
+            data.get("pageVisited"), ua_string, device_type, ua.browser.family, ua.os.family,
+            first_seen, time_spent_seconds
+        ))
+        
+        conn.commit()
 
         return jsonify({"success": True}), 201
 
     except Exception as e:
         app.logger.error(f"Error in /track: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
 
 @app.route('/log/time', methods=['POST', 'OPTIONS'])
 def log_time():
     if request.method == 'OPTIONS':
         return '', 200
 
+    conn = None
     try:
         data = request.get_json(force=True)
         session_id = data.get("sessionId")
@@ -255,21 +284,25 @@ def log_time():
         if time_spent_seconds is not None:
             time_spent_seconds = max(0, min(int(time_spent_seconds), 86400))
 
-        # Update the visitor record with time spent
-        update_data = {
-            "time_spent_seconds": time_spent_seconds
-        }
-
-        supabase.table('visitors') \
-            .update(update_data) \
-            .eq('session_id', session_id) \
-            .execute()
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            UPDATE public.visitors 
+            SET time_spent_seconds = %s 
+            WHERE session_id = %s
+        """, (time_spent_seconds, session_id))
+        
+        conn.commit()
 
         return jsonify({"success": True, "time_logged": time_spent_seconds}), 200
 
     except Exception as e:
         app.logger.error(f"Error in /log/time: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            conn.close()
 
 if __name__ == '__main__':
     debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
