@@ -4,21 +4,37 @@ from psycopg2.extras import RealDictCursor, Json
 from datetime import datetime
 from dateutil.parser import parse as date_parse
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 from user_agents import parse
 import pycountry
 
 load_dotenv()
 
-app = Flask(__name__, template_folder='templates')
+# Serve static files from 'static_frontend' folder (which will contain the Next.js export)
+app = Flask(__name__, static_folder='static_frontend', static_url_path='')
 CORS(app, origins="*", allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "OPTIONS"])
 
+@app.route('/')
+def serve_index():
+    return send_from_directory(app.static_folder, 'index.html')
+
+# Catch-all for SPA routing
+@app.route('/<path:path>')
+def serve_static(path):
+    # If file exists, serve it
+    full_path = os.path.join(app.root_path, app.static_folder, path)
+    if os.path.exists(full_path) and os.path.isfile(full_path):
+        return send_from_directory(app.static_folder, path)
+    
+    # Otherwise fallback to index.html for SPA
+    return send_from_directory(app.static_folder, 'index.html')
+
 # Database connection parameters
-DB_HOST = os.environ.get("DB_HOST", "db")
-DB_NAME = os.environ.get("DB_NAME", "postgres")
-DB_USER = os.environ.get("DB_USER", "postgres")
-DB_PASS = os.environ.get("DB_PASS", "postgres")
+DB_HOST = os.environ.get("DB_HOST", "localhost")
+DB_NAME = os.environ.get("DB_NAME", "trac_db")
+DB_USER = os.environ.get("DB_USER", "trac_user")
+DB_PASS = os.environ.get("DB_PASS", "trac_password")
 DB_PORT = os.environ.get("DB_PORT", "5432")
 
 def get_db_connection():
@@ -45,9 +61,7 @@ def get_country_code(country_name):
         return None
     return None
 
-@app.route('/dashboard')
-def dashboard():
-    return render_template('dashboard.html')
+
 
 @app.route('/api/analytics', methods=['GET', 'OPTIONS'])
 def get_analytics():
@@ -145,8 +159,6 @@ def get_analytics():
 
         params['granularity'] = granularity
         
-        app.logger.warning(f"DEBUG SQL PARAMS: {params}")
-
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         

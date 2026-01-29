@@ -1,0 +1,60 @@
+# --- Stage 1: Build Frontend (Static) ---
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+
+# Copy dependency definitions
+COPY frontend/package.json frontend/package-lock.json ./
+
+# Install dependencies
+# Using --legacy-peer-deps if needed, or just install
+RUN npm install
+
+# Copy source
+COPY frontend/ ./
+
+# Build the Next.js app to static 'out' dir
+RUN npm run build 
+
+# --- Stage 2: Setup Backend & Serve ---
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies (postgres drivers AND postgres server)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    postgresql \
+    postgresql-contrib \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy backend requirements
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install gunicorn
+
+# Copy backend source code including schema files (assumes they are in backend/ dir)
+COPY backend/ .
+
+# Ensure schema files are at /app root for start.sh
+# If they are in backend/ directory, they are already at /app/table.sql if we COPY backend/ .
+# Let's double check if backend/ has these files.
+# Assuming backend/table.sql exists
+
+# Copy built frontend from Stage 1 to 'static_frontend' folder
+COPY --from=frontend-builder /app/out ./static_frontend
+
+# Copy startup script
+COPY start.sh .
+RUN chmod +x start.sh
+
+# Environment variable defaults
+ENV FLASK_ENV=production
+ENV PORT=5000
+
+# Expose port
+EXPOSE 5000
+
+# Run entrypoint script
+CMD ["./start.sh"]

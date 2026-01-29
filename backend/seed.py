@@ -6,10 +6,10 @@ import psycopg2
 from psycopg2.extras import execute_values
 
 # Database connection parameters
-DB_HOST = os.environ.get("DB_HOST", "db")
-DB_NAME = os.environ.get("DB_NAME", "analytics_db")
-DB_USER = os.environ.get("DB_USER", "postgres")
-DB_PASS = os.environ.get("DB_PASS", "postgrespassword")
+DB_HOST = os.environ.get("DB_HOST", "localhost")
+DB_NAME = os.environ.get("DB_NAME", "trac_db")
+DB_USER = os.environ.get("DB_USER", "trac_user")
+DB_PASS = os.environ.get("DB_PASS", "trac_password")
 DB_PORT = os.environ.get("DB_PORT", "5432")
 
 def get_db_connection():
