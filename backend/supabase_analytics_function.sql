@@ -25,8 +25,8 @@ BEGIN
     LEFT JOIN ip_counts ic ON v.public_ip = ic.public_ip
     WHERE
       (country_filter IS NULL OR v.country = country_filter)
-      AND (start_date_filter IS NULL OR v.created_at >= start_date_filter)
-      AND (end_date_filter IS NULL OR v.created_at <= end_date_filter)
+      AND (start_date_filter IS NULL OR v.first_seen >= start_date_filter)
+      AND (end_date_filter IS NULL OR v.first_seen <= end_date_filter)
       AND (
         visitor_type_filter IS NULL
         OR visitor_type_filter = 'all'
@@ -41,7 +41,7 @@ BEGIN
   ),
   recent AS (
     SELECT * FROM filtered
-    ORDER BY created_at DESC
+    ORDER BY first_seen DESC
     LIMIT 100
   )
   SELECT json_build_object(
@@ -75,7 +75,7 @@ BEGIN
       'by_date', COALESCE((
         SELECT json_agg(row_to_json(d)) FROM (
           SELECT
-              date_trunc(granularity, created_at) AS date,
+              date_trunc(granularity, first_seen) AS date,
               COUNT(*) AS count,
               COUNT(DISTINCT public_ip) AS unique_visitors,
               COUNT(*) - COUNT(DISTINCT public_ip) AS returning_visitors
@@ -87,7 +87,7 @@ BEGIN
       'by_week', COALESCE((
         SELECT json_agg(row_to_json(w)) FROM (
           SELECT
-              date_trunc('week', created_at)::date AS date,
+              date_trunc('week', first_seen)::date AS date,
               COUNT(*) AS count,
               COUNT(DISTINCT public_ip) AS unique_visitors,
               COUNT(*) - COUNT(DISTINCT public_ip) AS returning_visitors
@@ -99,7 +99,7 @@ BEGIN
       'by_month', COALESCE((
         SELECT json_agg(row_to_json(m)) FROM (
           SELECT
-              date_trunc('month', created_at)::date AS date,
+              date_trunc('month', first_seen)::date AS date,
               COUNT(*) AS count,
               COUNT(DISTINCT public_ip) AS unique_visitors,
               COUNT(*) - COUNT(DISTINCT public_ip) AS returning_visitors

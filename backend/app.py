@@ -75,60 +75,77 @@ def get_analytics():
         # Defaults
         granularity = 'day'
         
-        if period == 'day':
-            granularity = 'hour'
-            from datetime import timedelta
-            start_date_filter = (now - timedelta(days=1)).isoformat()
-            end_date_filter = None 
-            params['start_date_filter'] = start_date_filter
-            params['end_date_filter'] = end_date_filter
-            
-        elif period == 'week':
-            granularity = 'day'
-            from datetime import timedelta
-            start_date_filter = (now - timedelta(days=7)).isoformat()
-            end_date_filter = None
-            params['start_date_filter'] = start_date_filter
-            params['end_date_filter'] = end_date_filter
-            
-        elif period == 'month':
-            granularity = 'day'
-            from datetime import timedelta
-            start_date_filter = (now - timedelta(days=30)).isoformat()
-            end_date_filter = None
-            params['start_date_filter'] = start_date_filter
-            params['end_date_filter'] = end_date_filter
-            
-        elif period == 'custom':
-            start_str = params.get('start_date_filter')
-            end_str = params.get('end_date_filter')
-            granularity = 'day'
-            
-            if start_str:
-                try:
-                    s_date = date_parse(start_str)
-                    e_date = date_parse(end_str) if end_str else now
-                    diff = e_date - s_date
-                    if diff.days <= 3:
-                        granularity = 'hour'
-                    else:
-                        granularity = 'day'
-                except:
-                    pass
+        # ONLY apply default period logic if explicit dates are NOT provided
+        if not params['start_date_filter'] and not params['end_date_filter']:
+            if period == 'day':
+                granularity = 'hour'
+                from datetime import timedelta
+                # Default "24h" view
+                start_date_filter = (now - timedelta(days=1)).isoformat()
+                end_date_filter = None 
+                params['start_date_filter'] = start_date_filter
+                params['end_date_filter'] = end_date_filter
+                
+            elif period == 'week':
+                granularity = 'day'
+                from datetime import timedelta
+                start_date_filter = (now - timedelta(days=7)).isoformat()
+                end_date_filter = None
+                params['start_date_filter'] = start_date_filter
+                params['end_date_filter'] = end_date_filter
+                
+            elif period == 'month':
+                granularity = 'day'
+                from datetime import timedelta
+                start_date_filter = (now - timedelta(days=30)).isoformat()
+                end_date_filter = None
+                params['start_date_filter'] = start_date_filter
+                params['end_date_filter'] = end_date_filter
 
-        # Convert empty strings to None and parse dates to ISO8601 strings
+        # If custom or explicit dates provided, determine granularity
+        # If period is 'day' but start/end provided (e.g. specific day selected), use 'hour' granularity if range is small
+        if params['start_date_filter']:
+             # Basic granularity heuristic
+             try:
+                 s = params['start_date_filter']
+                 e = params['end_date_filter']
+                 # If we have dates, let's just default to 'day' unless range is small
+                 granularity = 'day'
+                 
+                 # If period is explicitly 'day' (even with custom dates, like picking Yesterday), force hour
+                 if period == 'day':
+                     granularity = 'hour'
+                 elif period == 'custom':
+                     # Existing logic copy for safety if needed, or simple check
+                     pass 
+             except:
+                 pass
+
+        # Convert empty strings to None and parse dates appropriately
         for k, v in params.items():
             if not v:
                 params[k] = None
             else:
-                if k in ('start_date_filter', 'end_date_filter') and v is not None:
+                if k == 'start_date_filter':
                     try:
                         dt = date_parse(v)
                         params[k] = dt.isoformat()
                     except Exception:
                         params[k] = None
+                elif k == 'end_date_filter':
+                    try:
+                        dt = date_parse(v)
+                        # If date-only string (len 10) or midnight time, assume end of day is desired
+                        # Checking string length is safest if strictly YYYY-MM-DD
+                        if len(str(v).strip()) <= 10 or (dt.hour == 0 and dt.minute == 0):
+                            dt = dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+                        params[k] = dt.isoformat()
+                    except Exception:
+                        params[k] = None
 
         params['granularity'] = granularity
+        
+        app.logger.warning(f"DEBUG SQL PARAMS: {params}")
 
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
